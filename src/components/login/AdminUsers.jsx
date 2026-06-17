@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Box, VStack, Heading, Text, Button, Badge, HStack, useColorModeValue, Alert, AlertIcon, Tabs, TabList, TabPanels, Tab, TabPanel, SimpleGrid, Stat, StatLabel, StatNumber, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton } from '@chakra-ui/react';
-import { FiCheck, FiX, FiTrash2, FiUsers, FiClock, FiMail } from 'react-icons/fi';
+import { FiCheck, FiX, FiTrash2, FiUsers, FiClock, FiMail, FiArrowLeft } from 'react-icons/fi';
 import useStore from '../../store/useStore';
 import { sendCredentialsEmail, initEmailJS } from '../../utils/emailService';
 
 initEmailJS();
 
-export default function AdminUsers() {
+export default function AdminUsers({ onBack }) {
   const { users, pendingUsers, approveUser, rejectUser, deleteUser, user } = useStore();
   const [alert, setAlert] = useState({ type: '', message: '' });
   const bg = useColorModeValue('white', 'gray.800');
@@ -48,7 +48,8 @@ export default function AdminUsers() {
   const pendingCount = pendingUsers.length;
 
   return (
-    <Box>
+    <Box maxW="900px" mx="auto">
+      <Button leftIcon={<FiArrowLeft />} variant="ghost" mb={4} onClick={onBack}>Volver</Button>
       <Heading size="md" mb={4}>Gestión de Usuarios</Heading>
       {alert.message && <Alert status={alert.type} borderRadius="md" mb={4}><AlertIcon />{alert.message}</Alert>}
 

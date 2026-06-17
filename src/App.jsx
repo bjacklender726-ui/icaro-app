@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
+import { ChakraProvider, ColorModeScript, Box, useColorModeValue } from '@chakra-ui/react';
 import theme from './theme/theme';
 import Layout from './components/layout/Layout';
 import Dashboard from './components/dashboard/Dashboard';
@@ -22,6 +22,7 @@ import useStore from './store/useStore';
 function AppContent() {
   const isAuthenticated = useStore((s) => s.isAuthenticated);
   const currentView = useStore((s) => s.currentView);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   if (!isAuthenticated) {
     if (currentView === 'register') return <Register />;
@@ -29,9 +30,17 @@ function AppContent() {
     return <Login />;
   }
 
+  if (showAdmin) {
+    return (
+      <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')} p={8}>
+        <AdminUsers onBack={() => setShowAdmin(false)} />
+      </Box>
+    );
+  }
+
   return (
     <BrowserRouter>
-      <Layout>
+      <Layout onShowAdmin={() => setShowAdmin(true)}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/agenda" element={<Agenda />} />
@@ -43,7 +52,6 @@ function AppContent() {
           <Route path="/gamificacion" element={<Gamificacion />} />
           <Route path="/automatizaciones" element={<Automatizaciones />} />
           <Route path="/configuracion" element={<Configuracion />} />
-          <Route path="/admin-users" element={<AdminUsers />} />
         </Routes>
       </Layout>
     </BrowserRouter>

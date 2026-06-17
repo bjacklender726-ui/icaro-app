@@ -17,7 +17,7 @@ const navItems = [
   { path: '/configuracion', label: 'Configuración', icon: FiSettings, color: 'gray.500' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onShowAdmin }) {
   const { colorMode, toggleColorMode } = useColorMode();
   const location = useLocation();
   const { level, xp, focusMode, notifications, user } = useStore();
@@ -77,21 +77,22 @@ export default function Sidebar() {
         })}
         {isAdmin && (
           <Tooltip label="Admin Usuarios" placement="right" hasArrow>
-            <NavLink to="/admin-users" style={{ textDecoration: 'none' }}>
-              <HStack
-                px={3}
-                py={2.5}
-                borderRadius="lg"
-                bg={location.pathname === '/admin-users' ? 'purple.500' + '15' : 'transparent'}
-                color={location.pathname === '/admin-users' ? 'purple.500' : 'gray.500'}
-                _hover={{ bg: 'purple.500' + '10', color: 'purple.500' }}
-                transition="all 0.2s"
-                cursor="pointer"
-              >
+            <Box
+              px={3}
+              py={2.5}
+              borderRadius="lg"
+              bg="transparent"
+              color="gray.500"
+              _hover={{ bg: 'purple.50010', color: 'purple.500' }}
+              transition="all 0.2s"
+              cursor="pointer"
+              onClick={onShowAdmin}
+            >
+              <HStack>
                 <Icon as={FiUsers} boxSize={5} />
-                <Text fontSize="sm" fontWeight={location.pathname === '/admin-users' ? '600' : '400'}>Admin Usuarios</Text>
+                <Text fontSize="sm" fontWeight="400">Admin Usuarios</Text>
               </HStack>
-            </NavLink>
+            </Box>
           </Tooltip>
         )}
       </VStack>
