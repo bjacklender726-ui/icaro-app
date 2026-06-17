@@ -15,117 +15,120 @@ const generateSalt = () => {
   return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
+const saveToStorage = (key, data) => {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.error('Storage save error:', e); }
+};
+
 const useStore = create(
   persist(
-    (set, get) => {
-      const ensureAdmin = async () => {
+    (set, get) => ({
+      // ===== AUTH =====
+      user: null,
+      isAuthenticated: false,
+      users: [],
+      pendingUsers: [],
+      currentView: 'login',
+
+      initAuth: () => {
         const state = get();
         if (!state.users || state.users.length === 0) {
-          const salt = generateSalt();
-          const hashedPw = await hashPassword('icaro', salt);
-          set({
-            users: [{
+          hashPassword('icaro', 'admin-salt-icaro-2024').then(hashedPw => {
+            const adminUser = {
               id: 'admin-001',
               username: 'admin',
               email: 'admin@icaro.app',
               password: hashedPw,
-              salt,
+              salt: 'admin-salt-icaro-2024',
               name: 'Administrador',
               role: 'admin',
               status: 'active',
               securityQuestion: '¿Nombre de tu primera mascota?',
               securityAnswer: '',
               createdAt: new Date().toISOString(),
-            }],
-            pendingUsers: [],
+            };
+            set({ users: [adminUser] });
+            const s = get();
+            saveToStorage('icaro-storage', { state: { users: s.users, pendingUsers: s.pendingUsers, agendaTasks: s.agendaTasks, temarios: s.temarios, studySessions: s.studySessions, tests: s.tests, testResults: s.testResults, jobOffers: s.jobOffers, gymRoutines: s.gymRoutines, gymSessions: s.gymSessions, gymGoals: s.gymGoals, projects: s.projects, projectLogs: s.projectLogs, automations: s.automations, notifications: s.notifications, xp: s.xp, level: s.level, badges: s.badges, dailyMissions: s.dailyMissions, backups: s.backups, focusMode: s.focusMode, pomodoroActive: s.pomodoroActive, pomodoroMinutes: s.pomodoroMinutes, convocatoria: s.convocatoria, supuestosPracticos: s.supuestosPracticos, simulacros: s.simulacros }, version: 0 });
           });
         }
-      };
+      },
 
-      return {
-        // ===== AUTH =====
-        user: null,
-        isAuthenticated: false,
-        users: [],
-        pendingUsers: [],
-        currentView: 'login',
+      login: async (username, password) => {
+        const state = get();
+        const found = state.users.find(u => u.username === username && u.status === 'active');
+        if (!found) return { success: false, error: 'Usuario no encontrado o inactivo' };
+        const hashed = await hashPassword(password, found.salt);
+        if (hashed !== found.password) return { success: false, error: 'Contraseña incorrecta' };
+        set({ user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role }, isAuthenticated: true });
+        return { success: true };
+      },
 
-        initAuth: async () => {
-          await ensureAdmin();
-        },
+      logout: () => set({ user: null, isAuthenticated: false, currentView: 'login' }),
 
-        login: async (username, password) => {
-          const state = get();
-          const found = state.users.find(u => u.username === username && u.status === 'active');
-          if (!found) return { success: false, error: 'Usuario no encontrado o inactivo' };
-          const hashed = await hashPassword(password, found.salt);
-          if (hashed !== found.password) return { success: false, error: 'Contraseña incorrecta' };
-          set({ user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role }, isAuthenticated: true });
-          return { success: true };
-        },
+      register: async (data) => {
+        const state = get();
+        const allUsers = [...(state.users || []), ...(state.pendingUsers || [])];
+        const exists = allUsers.find(u => u.username === data.username || u.email === data.email);
+        if (exists) return { success: false, error: 'El usuario o email ya existe' };
+        const salt = generateSalt();
+        const hashedPw = await hashPassword(data.password, salt);
+        const pendingUser = {
+          id: uuidv4(),
+          username: data.username,
+          email: data.email,
+          password: hashedPw,
+          salt,
+          name: data.name,
+          role: 'user',
+          status: 'pending',
+          securityQuestion: data.securityQuestion,
+          securityAnswer: data.securityAnswer.toLowerCase().trim(),
+          createdAt: new Date().toISOString(),
+        };
+        const newPending = [...(state.pendingUsers || []), pendingUser];
+        set({ pendingUsers: newPending });
+        const s = get();
+        saveToStorage('icaro-storage', { state: { users: s.users, pendingUsers: s.pendingUsers, agendaTasks: s.agendaTasks, temarios: s.temarios, studySessions: s.studySessions, tests: s.tests, testResults: s.testResults, jobOffers: s.jobOffers, gymRoutines: s.gymRoutines, gymSessions: s.gymSessions, gymGoals: s.gymGoals, projects: s.projects, projectLogs: s.projectLogs, automations: s.automations, notifications: s.notifications, xp: s.xp, level: s.level, badges: s.badges, dailyMissions: s.dailyMissions, backups: s.backups, focusMode: s.focusMode, pomodoroActive: s.pomodoroActive, pomodoroMinutes: s.pomodoroMinutes, convocatoria: s.convocatoria, supuestosPracticos: s.supuestosPracticos, simulacros: s.simulacros }, version: 0 });
+        return { success: true, message: 'Registro enviado. Espera aprobación del administrador.' };
+      },
 
-        logout: () => set({ user: null, isAuthenticated: false, currentView: 'login' }),
+      approveUser: (userId) => {
+        const state = get();
+        const pending = state.pendingUsers.find(u => u.id === userId);
+        if (!pending) return null;
+        const newUsers = [...state.users, { ...pending, status: 'active' }];
+        const newPending = state.pendingUsers.filter(u => u.id !== userId);
+        set({ users: newUsers, pendingUsers: newPending });
+        const s = get();
+        saveToStorage('icaro-storage', { state: { users: s.users, pendingUsers: s.pendingUsers, agendaTasks: s.agendaTasks, temarios: s.temarios, studySessions: s.studySessions, tests: s.tests, testResults: s.testResults, jobOffers: s.jobOffers, gymRoutines: s.gymRoutines, gymSessions: s.gymSessions, gymGoals: s.gymGoals, projects: s.projects, projectLogs: s.projectLogs, automations: s.automations, notifications: s.notifications, xp: s.xp, level: s.level, badges: s.badges, dailyMissions: s.dailyMissions, backups: s.backups, focusMode: s.focusMode, pomodoroActive: s.pomodoroActive, pomodoroMinutes: s.pomodoroMinutes, convocatoria: s.convocatoria, supuestosPracticos: s.supuestosPracticos, simulacros: s.simulacros }, version: 0 });
+        return pending;
+      },
 
-        register: async (data) => {
-          const state = get();
-          const exists = state.users.find(u => u.username === data.username);
-          const pendingExists = state.pendingUsers.find(u => u.username === data.username);
-          if (exists || pendingExists) return { success: false, error: 'El usuario ya existe' };
-          const salt = generateSalt();
-          const hashedPw = await hashPassword(data.password, salt);
-          const pendingUser = {
-            id: uuidv4(),
-            username: data.username,
-            email: data.email,
-            password: hashedPw,
-            salt,
-            name: data.name,
-            role: 'user',
-            status: 'pending',
-            securityQuestion: data.securityQuestion,
-            securityAnswer: data.securityAnswer.toLowerCase().trim(),
-            createdAt: new Date().toISOString(),
-          };
-          set({ pendingUsers: [...state.pendingUsers, pendingUser] });
-          return { success: true, message: 'Registro enviado. Espera aprobación del administrador.' };
-        },
+      rejectUser: (userId) => {
+        const state = get();
+        set({ pendingUsers: state.pendingUsers.filter(u => u.id !== userId) });
+      },
 
-        approveUser: (userId) => {
-          const state = get();
-          const user = state.pendingUsers.find(u => u.id === userId);
-          if (!user) return;
-          set({
-            users: [...state.users, { ...user, status: 'active' }],
-            pendingUsers: state.pendingUsers.filter(u => u.id !== userId),
-          });
-          return user;
-        },
+      deleteUser: (userId) => {
+        if (userId === 'admin-001') return;
+        const state = get();
+        set({ users: state.users.filter(u => u.id !== userId) });
+      },
 
-        rejectUser: (userId) => {
-          set((s) => ({ pendingUsers: s.pendingUsers.filter(u => u.id !== userId) }));
-        },
+      recoverPassword: async (username, securityAnswer, newPassword) => {
+        const state = get();
+        const user = state.users.find(u => u.username === username && u.status === 'active');
+        if (!user) return { success: false, error: 'Usuario no encontrado' };
+        if (user.securityAnswer.toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
+          return { success: false, error: 'Respuesta de seguridad incorrecta' };
+        }
+        const salt = generateSalt();
+        const hashedPw = await hashPassword(newPassword, salt);
+        set({ users: state.users.map(u => u.id === user.id ? { ...u, password: hashedPw, salt } : u) });
+        return { success: true, message: 'Contraseña actualizada correctamente' };
+      },
 
-        deleteUser: (userId) => {
-          if (userId === 'admin-001') return;
-          set((s) => ({ users: s.users.filter(u => u.id !== userId) }));
-        },
-
-        recoverPassword: async (username, securityAnswer, newPassword) => {
-          const state = get();
-          const user = state.users.find(u => u.username === username && u.status === 'active');
-          if (!user) return { success: false, error: 'Usuario no encontrado' };
-          if (user.securityAnswer.toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
-            return { success: false, error: 'Respuesta de seguridad incorrecta' };
-          }
-          const salt = generateSalt();
-          const hashedPw = await hashPassword(newPassword, salt);
-          set({
-            users: state.users.map(u => u.id === user.id ? { ...u, password: hashedPw, salt } : u),
-          });
-          return { success: true, message: 'Contraseña actualizada correctamente' };
-        },
-
-        setView: (view) => set({ currentView: view }),
+      setView: (view) => set({ currentView: view }),
 
       // ===== AGENDA =====
       agendaTasks: [],
@@ -346,8 +349,7 @@ const useStore = create(
         level: 1,
         badges: [],
       }),
-    };
-  },
+    }),
     { name: 'icaro-storage' }
   )
 );
