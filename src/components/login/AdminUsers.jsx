@@ -15,7 +15,7 @@ export default function AdminUsers({ onBack }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const handleApprove = async (userId) => {
-    const approved = approveUser(userId);
+    const approved = await approveUser(userId);
     if (approved) {
       const emailResult = await sendCredentialsEmail(approved.email, approved.name, approved.username, 'Tu contraseña');
       const emailMsg = emailResult.mocked ? ' (EmailJS no configurado — credentials logueadas en consola)' : '';
@@ -24,8 +24,8 @@ export default function AdminUsers({ onBack }) {
     }
   };
 
-  const handleReject = (userId) => {
-    rejectUser(userId);
+  const handleReject = async (userId) => {
+    await rejectUser(userId);
     setAlert({ type: 'info', message: 'Solicitud rechazada' });
     setTimeout(() => setAlert({ type: '', message: '' }), 3000);
   };
@@ -35,9 +35,9 @@ export default function AdminUsers({ onBack }) {
     onOpen();
   };
 
-  const doDelete = () => {
+  const doDelete = async () => {
     if (deleteTarget) {
-      deleteUser(deleteTarget.id);
+      await deleteUser(deleteTarget.id);
       setDeleteTarget(null);
       onClose();
     }
