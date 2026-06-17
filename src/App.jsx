@@ -14,11 +14,21 @@ import Gamificacion from './components/gamificacion/Gamificacion';
 import Automatizaciones from './components/automations/Automatizaciones';
 import Configuracion from './components/settings/Configuracion';
 import Login from './components/login/Login';
+import Register from './components/login/Register';
+import ForgotPassword from './components/login/ForgotPassword';
+import AdminUsers from './components/login/AdminUsers';
 import useStore from './store/useStore';
 
 function AppContent() {
   const isAuthenticated = useStore((s) => s.isAuthenticated);
-  if (!isAuthenticated) return <Login />;
+  const currentView = useStore((s) => s.currentView);
+
+  if (!isAuthenticated) {
+    if (currentView === 'register') return <Register />;
+    if (currentView === 'forgot') return <ForgotPassword />;
+    return <Login />;
+  }
+
   return (
     <BrowserRouter>
       <Layout>
@@ -33,6 +43,7 @@ function AppContent() {
           <Route path="/gamificacion" element={<Gamificacion />} />
           <Route path="/automatizaciones" element={<Automatizaciones />} />
           <Route path="/configuracion" element={<Configuracion />} />
+          <Route path="/admin-users" element={<AdminUsers />} />
         </Routes>
       </Layout>
     </BrowserRouter>

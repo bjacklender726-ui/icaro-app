@@ -1,23 +1,27 @@
-import React, { useState } from 'react';
-import { Box, VStack, Heading, Input, Button, Text, useColorModeValue, Alert, AlertIcon } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Box, VStack, Heading, Input, Button, Text, useColorModeValue, Alert, AlertIcon, Link, HStack } from '@chakra-ui/react';
 import { FiLock, FiUser } from 'react-icons/fi';
 import useStore from '../../store/useStore';
 
 export default function Login() {
-  const { login } = useStore();
+  const { login, initAuth, setView } = useStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const bg = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const handleLogin = (e) => {
+  useEffect(() => { initAuth(); }, []);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    if (!login(username, password)) {
-      setError('Usuario o contraseña incorrectos');
-    }
+    setLoading(true);
+    const result = await login(username, password);
+    setLoading(false);
+    if (!result.success) setError(result.error);
   };
 
   return (
@@ -30,24 +34,15 @@ export default function Login() {
           </Box>
           {error && <Alert status="error" borderRadius="md"><AlertIcon />{error}</Alert>}
           <VStack spacing={4} w="100%" as="form" onSubmit={handleLogin}>
-            <Input
-              placeholder="Usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              leftIcon={<FiUser />}
-              size="lg"
-            />
-            <Input
-              placeholder="Contraseña"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              leftIcon={<FiLock />}
-              size="lg"
-            />
-            <Button type="submit" size="lg" w="100%" mt={2}>Iniciar Sesión</Button>
+            <Input placeholder="Usuario" value={username} onChange={(e) => setUsername(e.target.value)} leftIcon={<FiUser />} size="lg" />
+            <Input placeholder="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} leftIcon={<FiLock />} size="lg" />
+            <Button type="submit" size="lg" w="100%" mt={2} isLoading={loading}>Iniciar Sesión</Button>
           </VStack>
-          <Text fontSize="xs" color="gray.500">Credenciales: admin / icaro</Text>
+          <HStack spacing={1} w="100%" justify="center">
+            <Text fontSize="sm" color="gray.500">¿No tienes cuenta?</Text>
+            <Link fontSize="sm" color="blue.400" onClick={() => setView('register')} _hover={{ color: 'blue.300' }}>Regístrate</Link>
+          </HStack>
+          <Link fontSize="xs" color="gray.500" onClick={() => setView('forgot')} _hover={{ color: 'gray.400' }}>¿Olvidaste tu contraseña?</Link>
         </VStack>
       </Box>
     </Box>

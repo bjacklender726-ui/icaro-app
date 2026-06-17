@@ -2,20 +2,130 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 
+const hashPassword = async (password, salt) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(salt + password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+const generateSalt = () => {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 const useStore = create(
   persist(
-    (set, get) => ({
-      // ===== AUTH =====
-      user: null,
-      isAuthenticated: false,
-      login: (username, password) => {
-        if (username === 'admin' && password === 'icaro') {
-          set({ user: { username, name: 'Admin' }, isAuthenticated: true });
-          return true;
+    (set, get) => {
+      const ensureAdmin = async () => {
+        const state = get();
+        if (!state.users || state.users.length === 0) {
+          const salt = generateSalt();
+          const hashedPw = await hashPassword('icaro', salt);
+          set({
+            users: [{
+              id: 'admin-001',
+              username: 'admin',
+              email: 'admin@icaro.app',
+              password: hashedPw,
+              salt,
+              name: 'Administrador',
+              role: 'admin',
+              status: 'active',
+              securityQuestion: '¿Nombre de tu primera mascota?',
+              securityAnswer: '',
+              createdAt: new Date().toISOString(),
+            }],
+            pendingUsers: [],
+          });
         }
-        return false;
-      },
-      logout: () => set({ user: null, isAuthenticated: false }),
+      };
+
+      return {
+        // ===== AUTH =====
+        user: null,
+        isAuthenticated: false,
+        users: [],
+        pendingUsers: [],
+        currentView: 'login',
+
+        initAuth: async () => {
+          await ensureAdmin();
+        },
+
+        login: async (username, password) => {
+          const state = get();
+          const found = state.users.find(u => u.username === username && u.status === 'active');
+          if (!found) return { success: false, error: 'Usuario no encontrado o inactivo' };
+          const hashed = await hashPassword(password, found.salt);
+          if (hashed !== found.password) return { success: false, error: 'Contraseña incorrecta' };
+          set({ user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role }, isAuthenticated: true });
+          return { success: true };
+        },
+
+        logout: () => set({ user: null, isAuthenticated: false, currentView: 'login' }),
+
+        register: async (data) => {
+          const state = get();
+          const exists = state.users.find(u => u.username === data.username);
+          const pendingExists = state.pendingUsers.find(u => u.username === data.username);
+          if (exists || pendingExists) return { success: false, error: 'El usuario ya existe' };
+          const salt = generateSalt();
+          const hashedPw = await hashPassword(data.password, salt);
+          const pendingUser = {
+            id: uuidv4(),
+            username: data.username,
+            email: data.email,
+            password: hashedPw,
+            salt,
+            name: data.name,
+            role: 'user',
+            status: 'pending',
+            securityQuestion: data.securityQuestion,
+            securityAnswer: data.securityAnswer.toLowerCase().trim(),
+            createdAt: new Date().toISOString(),
+          };
+          set({ pendingUsers: [...state.pendingUsers, pendingUser] });
+          return { success: true, message: 'Registro enviado. Espera aprobación del administrador.' };
+        },
+
+        approveUser: (userId) => {
+          const state = get();
+          const user = state.pendingUsers.find(u => u.id === userId);
+          if (!user) return;
+          set({
+            users: [...state.users, { ...user, status: 'active' }],
+            pendingUsers: state.pendingUsers.filter(u => u.id !== userId),
+          });
+          return user;
+        },
+
+        rejectUser: (userId) => {
+          set((s) => ({ pendingUsers: s.pendingUsers.filter(u => u.id !== userId) }));
+        },
+
+        deleteUser: (userId) => {
+          if (userId === 'admin-001') return;
+          set((s) => ({ users: s.users.filter(u => u.id !== userId) }));
+        },
+
+        recoverPassword: async (username, securityAnswer, newPassword) => {
+          const state = get();
+          const user = state.users.find(u => u.username === username && u.status === 'active');
+          if (!user) return { success: false, error: 'Usuario no encontrado' };
+          if (user.securityAnswer.toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
+            return { success: false, error: 'Respuesta de seguridad incorrecta' };
+          }
+          const salt = generateSalt();
+          const hashedPw = await hashPassword(newPassword, salt);
+          set({
+            users: state.users.map(u => u.id === user.id ? { ...u, password: hashedPw, salt } : u),
+          });
+          return { success: true, message: 'Contraseña actualizada correctamente' };
+        },
+
+        setView: (view) => set({ currentView: view }),
 
       // ===== AGENDA =====
       agendaTasks: [],
@@ -236,7 +346,8 @@ const useStore = create(
         level: 1,
         badges: [],
       }),
-    }),
+    };
+  },
     { name: 'icaro-storage' }
   )
 );

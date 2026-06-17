@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Flex, Text, Icon, VStack, HStack, Badge, Avatar, useColorMode, useColorModeValue, Tooltip, IconButton } from '@chakra-ui/react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FiHome, FiCalendar, FiBook, FiBriefcase, FiActivity, FiGrid, FiBarChart2, FiZap, FiSettings, FiMoon, FiSun, FiBell, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiBook, FiBriefcase, FiActivity, FiGrid, FiBarChart2, FiZap, FiSettings, FiMoon, FiSun, FiBell, FiLogOut, FiUsers } from 'react-icons/fi';
 import useStore from '../../store/useStore';
 
 const navItems = [
@@ -20,7 +20,8 @@ const navItems = [
 export default function Sidebar() {
   const { colorMode, toggleColorMode } = useColorMode();
   const location = useLocation();
-  const { level, xp, focusMode, notifications } = useStore();
+  const { level, xp, focusMode, notifications, user } = useStore();
+  const isAdmin = user?.role === 'admin';
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -74,6 +75,25 @@ export default function Sidebar() {
             </Tooltip>
           );
         })}
+        {isAdmin && (
+          <Tooltip label="Admin Usuarios" placement="right" hasArrow>
+            <NavLink to="/admin-users" style={{ textDecoration: 'none' }}>
+              <HStack
+                px={3}
+                py={2.5}
+                borderRadius="lg"
+                bg={location.pathname === '/admin-users' ? 'purple.500' + '15' : 'transparent'}
+                color={location.pathname === '/admin-users' ? 'purple.500' : 'gray.500'}
+                _hover={{ bg: 'purple.500' + '10', color: 'purple.500' }}
+                transition="all 0.2s"
+                cursor="pointer"
+              >
+                <Icon as={FiUsers} boxSize={5} />
+                <Text fontSize="sm" fontWeight={location.pathname === '/admin-users' ? '600' : '400'}>Admin Usuarios</Text>
+              </HStack>
+            </NavLink>
+          </Tooltip>
+        )}
       </VStack>
 
       <Flex p={3} borderTop="1px solid" borderColor={borderColor} justify="space-between" align="center">
