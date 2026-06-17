@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase, isSupabaseConfigured } from '../utils/supabase';
 
 const AUTH_KEY = 'icaro-auth';
 const SESSION_KEY = 'icaro-session';
@@ -28,15 +29,6 @@ const saveJSON = (key, data) => {
 
 const getDataKey = (userId) => `${DATA_PREFIX}${userId}`;
 
-const DATA_FIELDS = [
-  'agendaTasks', 'temarios', 'studySessions', 'tests', 'testResults',
-  'convocatoria', 'supuestosPracticos', 'simulacros',
-  'jobOffers', 'gymRoutines', 'gymSessions', 'gymGoals',
-  'projects', 'projectLogs', 'automations',
-  'notifications', 'xp', 'level', 'badges', 'dailyMissions',
-  'backups', 'focusMode', 'pomodoroActive', 'pomodoroMinutes',
-];
-
 const getDefaultData = () => ({
   agendaTasks: [], temarios: [], studySessions: [], tests: [], testResults: [],
   convocatoria: { nombre: '', organismo: '', plazoInscripcionInicio: '', plazoInscripcionFin: '', inscrito: false, fechaAdmitidos: '', listasProvisionales: '', fechaExamen: '', lugarExamen: '', tasa: '', mediasAprobar: '', numeroPlazas: '', notas: '' },
@@ -47,95 +39,400 @@ const getDefaultData = () => ({
   backups: [], focusMode: false, pomodoroActive: false, pomodoroMinutes: 25,
 });
 
+const DATA_FIELDS = Object.keys(getDefaultData());
+
+const mapUser = (u) => ({
+  id: u.id,
+  username: u.username,
+  email: u.email,
+  password: u.password_hash,
+  salt: u.salt,
+  name: u.name,
+  role: u.role,
+  status: u.status,
+  securityQuestion: u.security_question,
+  securityAnswer: u.security_answer,
+  createdAt: u.created_at,
+});
+
+const mapUserRow = (user) => ({
+  id: user.id,
+  username: user.username,
+  email: user.email,
+  password_hash: user.password,
+  salt: user.salt,
+  name: user.name,
+  role: user.role,
+  status: user.status,
+  security_question: user.securityQuestion,
+  security_answer: user.securityAnswer,
+  created_at: user.createdAt,
+});
+
+const sb = {
+  async getUsers() {
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) throw error;
+    return data;
+  },
+
+  async getPendingUsers() {
+    const { data, error } = await supabase.from('pending_users').select('*');
+    if (error) throw error;
+    return data;
+  },
+
+  async createUser(userData) {
+    const { error } = await supabase.from('users').insert(userData);
+    if (error) throw error;
+  },
+
+  async updateUser(userId, updates) {
+    const { error } = await supabase.from('users').update(updates).eq('id', userId);
+    if (error) throw error;
+  },
+
+  async deleteUser(userId) {
+    const { error } = await supabase.from('users').delete().eq('id', userId);
+    if (error) throw error;
+  },
+
+  async createPendingUser(userData) {
+    const { error } = await supabase.from('pending_users').insert(userData);
+    if (error) throw error;
+  },
+
+  async deletePendingUser(userId) {
+    const { error } = await supabase.from('pending_users').delete().eq('id', userId);
+    if (error) throw error;
+  },
+
+  async getUserData(userId) {
+    const { data, error } = await supabase
+      .from('user_data')
+      .select('data')
+      .eq('user_id', userId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.data || null;
+  },
+
+  async saveUserData(userId, data) {
+    const { error } = await supabase.rpc('upsert_user_data', {
+      p_user_id: userId,
+      p_data: data,
+    });
+    if (error) throw error;
+  },
+};
+
 const useStore = create((set, get) => {
-  const loadUserData = (userId) => {
+  const loadUserData = async (userId) => {
+    if (isSupabaseConfigured()) {
+      const data = await sb.getUserData(userId);
+      return data || getDefaultData();
+    }
     const saved = loadJSON(getDataKey(userId));
     return saved || getDefaultData();
   };
 
-  const saveUserData = (userId, data) => {
+  const saveUserData = async (userId, data) => {
     const toSave = {};
     DATA_FIELDS.forEach(f => { toSave[f] = data[f]; });
-    saveJSON(getDataKey(userId), toSave);
-  };
-
-  const saveAuth = (authData) => {
-    saveJSON(AUTH_KEY, authData);
-  };
-
-  const initAuth = () => {
-    const auth = loadJSON(AUTH_KEY);
-    if (!auth || !auth.users || auth.users.length === 0) {
-      hashPassword('icaro', 'admin-salt-icaro-2024').then(hashedPw => {
-        const adminUser = {
-          id: 'admin-001', username: 'admin', email: 'admin@icaro.app',
-          password: hashedPw, salt: 'admin-salt-icaro-2024',
-          name: 'Administrador', role: 'admin', status: 'active',
-          securityQuestion: '¿Nombre de tu primera mascota?', securityAnswer: '',
-          createdAt: new Date().toISOString(),
-        };
-        saveAuth({ users: [adminUser], pendingUsers: [] });
-        set({ users: [adminUser], pendingUsers: [] });
-      });
+    if (isSupabaseConfigured()) {
+      await sb.saveUserData(userId, toSave);
     } else {
-      set({ users: auth.users, pendingUsers: auth.pendingUsers || [] });
+      saveJSON(getDataKey(userId), toSave);
     }
-
-    const session = loadJSON(SESSION_KEY);
-    if (session && session.userId) {
-      const authData = loadJSON(AUTH_KEY);
-      const found = authData?.users?.find(u => u.id === session.userId && u.status === 'active');
-      if (found) {
-        const userData = loadUserData(found.id);
-        set({
-          ...userData,
-          user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role },
-          isAuthenticated: true,
-          users: authData.users,
-          pendingUsers: authData.pendingUsers || [],
-        });
-        return;
-      }
-    }
-    set({ ...getDefaultData(), user: null, isAuthenticated: false });
-  };
-
-  const login = async (username, password) => {
-    const auth = loadJSON(AUTH_KEY);
-    if (!auth || !auth.users) return { success: false, error: 'Sistema no inicializado' };
-    const found = auth.users.find(u => u.username === username && u.status === 'active');
-    if (!found) return { success: false, error: 'Usuario no encontrado o inactivo' };
-    const hashed = await hashPassword(password, found.salt);
-    if (hashed !== found.password) return { success: false, error: 'Contraseña incorrecta' };
-    const userData = loadUserData(found.id);
-    saveJSON(SESSION_KEY, { userId: found.id });
-    set({
-      ...userData,
-      user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role },
-      isAuthenticated: true,
-      users: auth.users,
-      pendingUsers: auth.pendingUsers || [],
-    });
-    return { success: true };
-  };
-
-  const logout = () => {
-    const state = get();
-    if (state.user) {
-      saveUserData(state.user.id, state);
-    }
-    localStorage.removeItem(SESSION_KEY);
-    set({
-      ...getDefaultData(),
-      user: null, isAuthenticated: false, currentView: 'login',
-      users: loadJSON(AUTH_KEY)?.users || [],
-      pendingUsers: loadJSON(AUTH_KEY)?.pendingUsers || [],
-    });
   };
 
   const saveCurrentUserData = () => {
     const state = get();
     if (state.user) saveUserData(state.user.id, state);
+  };
+
+  const initAuth = async () => {
+    if (isSupabaseConfigured()) {
+      let users = await sb.getUsers();
+      let pendingUsers = await sb.getPendingUsers();
+
+      if (!users || users.length === 0) {
+        const salt = 'admin-salt-icaro-2024';
+        const hashedPw = await hashPassword('icaro', salt);
+        const adminUser = {
+          id: 'admin-001',
+          username: 'admin',
+          email: 'admin@icaro.app',
+          password_hash: hashedPw,
+          salt,
+          name: 'Administrador',
+          role: 'admin',
+          status: 'active',
+          security_question: '¿Nombre de tu primera mascota?',
+          security_answer: '',
+          created_at: new Date().toISOString(),
+        };
+        await sb.createUser(adminUser);
+        users = [adminUser];
+        pendingUsers = pendingUsers || [];
+      }
+
+      set({
+        users: users.map(mapUser),
+        pendingUsers: pendingUsers.map(mapUser),
+      });
+
+      const session = loadJSON(SESSION_KEY);
+      if (session && session.userId) {
+        const found = users.find(u => u.id === session.userId && u.status === 'active');
+        if (found) {
+          const userData = await loadUserData(found.id);
+          set({
+            ...userData,
+            user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role },
+            isAuthenticated: true,
+          });
+          return;
+        }
+      }
+      set({ ...getDefaultData(), user: null, isAuthenticated: false });
+    } else {
+      const auth = loadJSON(AUTH_KEY);
+      if (!auth || !auth.users || auth.users.length === 0) {
+        const salt = 'admin-salt-icaro-2024';
+        const hashedPw = await hashPassword('icaro', salt);
+        const adminUser = {
+          id: 'admin-001', username: 'admin', email: 'admin@icaro.app',
+          password: hashedPw, salt,
+          name: 'Administrador', role: 'admin', status: 'active',
+          securityQuestion: '¿Nombre de tu primera mascota?', securityAnswer: '',
+          createdAt: new Date().toISOString(),
+        };
+        saveJSON(AUTH_KEY, { users: [adminUser], pendingUsers: [] });
+        set({ users: [adminUser], pendingUsers: [] });
+      } else {
+        set({ users: auth.users, pendingUsers: auth.pendingUsers || [] });
+      }
+
+      const session = loadJSON(SESSION_KEY);
+      if (session && session.userId) {
+        const authData = loadJSON(AUTH_KEY);
+        const found = authData?.users?.find(u => u.id === session.userId && u.status === 'active');
+        if (found) {
+          const userData = loadJSON(getDataKey(found.id)) || getDefaultData();
+          set({
+            ...userData,
+            user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role },
+            isAuthenticated: true,
+            users: authData.users,
+            pendingUsers: authData.pendingUsers || [],
+          });
+          return;
+        }
+      }
+      set({ ...getDefaultData(), user: null, isAuthenticated: false });
+    }
+  };
+
+  const login = async (username, password) => {
+    let found = null;
+
+    if (isSupabaseConfigured()) {
+      const users = await sb.getUsers();
+      found = users.find(u => u.username === username && u.status === 'active');
+    } else {
+      const auth = loadJSON(AUTH_KEY);
+      if (!auth || !auth.users) return { success: false, error: 'Sistema no inicializado' };
+      found = auth.users.find(u => u.username === username && u.status === 'active');
+    }
+
+    if (!found) return { success: false, error: 'Usuario no encontrado o inactivo' };
+
+    const salt = found.salt;
+    const hashed = await hashPassword(password, salt);
+    const passwordHash = found.password_hash || found.password;
+
+    if (hashed !== passwordHash) return { success: false, error: 'Contraseña incorrecta' };
+
+    const userData = await loadUserData(found.id);
+
+    if (!isSupabaseConfigured()) {
+      saveJSON(SESSION_KEY, { userId: found.id });
+      const auth = loadJSON(AUTH_KEY);
+      set({
+        ...userData,
+        user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role },
+        isAuthenticated: true,
+        users: auth.users,
+        pendingUsers: auth.pendingUsers || [],
+      });
+    } else {
+      saveJSON(SESSION_KEY, { userId: found.id });
+      const users = await sb.getUsers();
+      const pendingUsers = await sb.getPendingUsers();
+      set({
+        ...userData,
+        user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role },
+        isAuthenticated: true,
+        users: users.map(mapUser),
+        pendingUsers: pendingUsers.map(mapUser),
+      });
+    }
+
+    return { success: true };
+  };
+
+  const logout = async () => {
+    const state = get();
+    if (state.user) {
+      await saveUserData(state.user.id, state);
+    }
+    localStorage.removeItem(SESSION_KEY);
+
+    if (isSupabaseConfigured()) {
+      const users = await sb.getUsers();
+      const pendingUsers = await sb.getPendingUsers();
+      set({
+        ...getDefaultData(),
+        user: null, isAuthenticated: false, currentView: 'login',
+        users: users.map(mapUser),
+        pendingUsers: pendingUsers.map(mapUser),
+      });
+    } else {
+      const auth = loadJSON(AUTH_KEY);
+      set({
+        ...getDefaultData(),
+        user: null, isAuthenticated: false, currentView: 'login',
+        users: auth?.users || [],
+        pendingUsers: auth?.pendingUsers || [],
+      });
+    }
+  };
+
+  const register = async (data) => {
+    const salt = generateSalt();
+    const hashedPw = await hashPassword(data.password, salt);
+
+    if (isSupabaseConfigured()) {
+      const users = await sb.getUsers();
+      const pendingUsers = await sb.getPendingUsers();
+      const allUsers = [...users.map(mapUser), ...pendingUsers.map(mapUser)];
+      const exists = allUsers.find(u => u.username === data.username || u.email === data.email);
+      if (exists) return { success: false, error: 'El usuario o email ya existe' };
+
+      const pendingUser = {
+        id: uuidv4(), username: data.username, email: data.email,
+        password_hash: hashedPw, salt, name: data.name, role: 'user', status: 'pending',
+        security_question: data.securityQuestion,
+        security_answer: data.securityAnswer.toLowerCase().trim(),
+        created_at: new Date().toISOString(),
+      };
+      await sb.createPendingUser(pendingUser);
+      set({ pendingUsers: [...pendingUsers, mapUser(pendingUser)] });
+    } else {
+      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
+      const allUsers = [...(auth.users || []), ...(auth.pendingUsers || [])];
+      const exists = allUsers.find(u => u.username === data.username || u.email === data.email);
+      if (exists) return { success: false, error: 'El usuario o email ya existe' };
+
+      const pendingUser = {
+        id: uuidv4(), username: data.username, email: data.email,
+        password: hashedPw, salt, name: data.name, role: 'user', status: 'pending',
+        securityQuestion: data.securityQuestion,
+        securityAnswer: data.securityAnswer.toLowerCase().trim(),
+        createdAt: new Date().toISOString(),
+      };
+      const newPending = [...(auth.pendingUsers || []), pendingUser];
+      saveJSON(AUTH_KEY, { users: auth.users, pendingUsers: newPending });
+      set({ pendingUsers: newPending });
+    }
+
+    return { success: true, message: 'Registro enviado. Espera aprobación del administrador.' };
+  };
+
+  const approveUser = async (userId) => {
+    if (isSupabaseConfigured()) {
+      const pendingUsers = await sb.getPendingUsers();
+      const pending = pendingUsers.find(u => u.id === userId);
+      if (!pending) return null;
+
+      await sb.createUser({ ...pending, status: 'active' });
+      await sb.saveUserData(pending.id, getDefaultData());
+
+      const users = await sb.getUsers();
+      const newPending = await sb.getPendingUsers();
+      set({ users: users.map(mapUser), pendingUsers: newPending.map(mapUser) });
+      return mapUser(pending);
+    } else {
+      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
+      const pending = auth.pendingUsers.find(u => u.id === userId);
+      if (!pending) return null;
+      const newUsers = [...auth.users, { ...pending, status: 'active' }];
+      const newPending = auth.pendingUsers.filter(u => u.id !== userId);
+      saveJSON(AUTH_KEY, { users: newUsers, pendingUsers: newPending });
+      saveJSON(getDataKey(pending.id), getDefaultData());
+      set({ users: newUsers, pendingUsers: newPending });
+      return pending;
+    }
+  };
+
+  const rejectUser = async (userId) => {
+    if (isSupabaseConfigured()) {
+      await sb.deletePendingUser(userId);
+      const newPending = await sb.getPendingUsers();
+      set({ pendingUsers: newPending.map(mapUser) });
+    } else {
+      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
+      const newPending = auth.pendingUsers.filter(u => u.id !== userId);
+      saveJSON(AUTH_KEY, { users: auth.users, pendingUsers: newPending });
+      set({ pendingUsers: newPending });
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    if (userId === 'admin-001') return;
+
+    if (isSupabaseConfigured()) {
+      await sb.deleteUser(userId);
+      const users = await sb.getUsers();
+      set({ users: users.map(mapUser) });
+    } else {
+      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
+      const newUsers = auth.users.filter(u => u.id !== userId);
+      saveJSON(AUTH_KEY, { users: newUsers, pendingUsers: auth.pendingUsers });
+      localStorage.removeItem(getDataKey(userId));
+      set({ users: newUsers });
+    }
+  };
+
+  const recoverPassword = async (username, securityAnswer, newPassword) => {
+    if (isSupabaseConfigured()) {
+      const users = await sb.getUsers();
+      const user = users.find(u => u.username === username && u.status === 'active');
+      if (!user) return { success: false, error: 'Usuario no encontrado' };
+      if ((user.security_answer || '').toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
+        return { success: false, error: 'Respuesta de seguridad incorrecta' };
+      }
+      const salt = generateSalt();
+      const hashedPw = await hashPassword(newPassword, salt);
+      await sb.updateUser(user.id, { password_hash: hashedPw, salt });
+      const updatedUsers = await sb.getUsers();
+      set({ users: updatedUsers.map(mapUser) });
+    } else {
+      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
+      const user = auth.users.find(u => u.username === username && u.status === 'active');
+      if (!user) return { success: false, error: 'Usuario no encontrado' };
+      if (user.securityAnswer.toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
+        return { success: false, error: 'Respuesta de seguridad incorrecta' };
+      }
+      const salt = generateSalt();
+      const hashedPw = await hashPassword(newPassword, salt);
+      const newUsers = auth.users.map(u => u.id === user.id ? { ...u, password: hashedPw, salt } : u);
+      saveJSON(AUTH_KEY, { users: newUsers, pendingUsers: auth.pendingUsers });
+      set({ users: newUsers });
+    }
+
+    return { success: true, message: 'Contraseña actualizada correctamente' };
   };
 
   return {
@@ -151,68 +448,11 @@ const useStore = create((set, get) => {
     logout,
     setView: (view) => set({ currentView: view }),
 
-    register: async (data) => {
-      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
-      const allUsers = [...(auth.users || []), ...(auth.pendingUsers || [])];
-      const exists = allUsers.find(u => u.username === data.username || u.email === data.email);
-      if (exists) return { success: false, error: 'El usuario o email ya existe' };
-      const salt = generateSalt();
-      const hashedPw = await hashPassword(data.password, salt);
-      const pendingUser = {
-        id: uuidv4(), username: data.username, email: data.email,
-        password: hashedPw, salt, name: data.name, role: 'user', status: 'pending',
-        securityQuestion: data.securityQuestion,
-        securityAnswer: data.securityAnswer.toLowerCase().trim(),
-        createdAt: new Date().toISOString(),
-      };
-      const newPending = [...(auth.pendingUsers || []), pendingUser];
-      saveAuth({ users: auth.users, pendingUsers: newPending });
-      set({ pendingUsers: newPending });
-      return { success: true, message: 'Registro enviado. Espera aprobación del administrador.' };
-    },
-
-    approveUser: (userId) => {
-      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
-      const pending = auth.pendingUsers.find(u => u.id === userId);
-      if (!pending) return null;
-      const newUsers = [...auth.users, { ...pending, status: 'active' }];
-      const newPending = auth.pendingUsers.filter(u => u.id !== userId);
-      saveAuth({ users: newUsers, pendingUsers: newPending });
-      saveUserData(pending.id, getDefaultData());
-      set({ users: newUsers, pendingUsers: newPending });
-      return pending;
-    },
-
-    rejectUser: (userId) => {
-      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
-      const newPending = auth.pendingUsers.filter(u => u.id !== userId);
-      saveAuth({ users: auth.users, pendingUsers: newPending });
-      set({ pendingUsers: newPending });
-    },
-
-    deleteUser: (userId) => {
-      if (userId === 'admin-001') return;
-      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
-      const newUsers = auth.users.filter(u => u.id !== userId);
-      saveAuth({ users: newUsers, pendingUsers: auth.pendingUsers });
-      localStorage.removeItem(getDataKey(userId));
-      set({ users: newUsers });
-    },
-
-    recoverPassword: async (username, securityAnswer, newPassword) => {
-      const auth = loadJSON(AUTH_KEY) || { users: [], pendingUsers: [] };
-      const user = auth.users.find(u => u.username === username && u.status === 'active');
-      if (!user) return { success: false, error: 'Usuario no encontrado' };
-      if (user.securityAnswer.toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
-        return { success: false, error: 'Respuesta de seguridad incorrecta' };
-      }
-      const salt = generateSalt();
-      const hashedPw = await hashPassword(newPassword, salt);
-      const newUsers = auth.users.map(u => u.id === user.id ? { ...u, password: hashedPw, salt } : u);
-      saveAuth({ users: newUsers, pendingUsers: auth.pendingUsers });
-      set({ users: newUsers });
-      return { success: true, message: 'Contraseña actualizada correctamente' };
-    },
+    register,
+    approveUser,
+    rejectUser,
+    deleteUser,
+    recoverPassword,
 
     addAgendaTask: (task) => { set((s) => ({ agendaTasks: [...s.agendaTasks, { ...task, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
     updateAgendaTask: (id, data) => { set((s) => ({ agendaTasks: s.agendaTasks.map((t) => (t.id === id ? { ...t, ...data } : t)) })); setTimeout(saveCurrentUserData, 0); },
