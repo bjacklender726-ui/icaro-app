@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ChakraProvider, ColorModeScript, Box, useColorModeValue } from '@chakra-ui/react';
 import theme from './theme/theme';
 import Layout from './components/layout/Layout';
@@ -39,7 +39,7 @@ function AppContent() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Layout onShowAdmin={() => setShowAdmin(true)}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -54,7 +54,7 @@ function AppContent() {
           <Route path="/configuracion" element={<Configuracion />} />
         </Routes>
       </Layout>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
