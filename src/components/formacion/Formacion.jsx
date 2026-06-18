@@ -48,6 +48,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Japonés, Coreano, Chino simplificado, Indonesio, Español',
     studyTimeEstimate: '40-60 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-saa',
@@ -68,6 +74,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Japonés, Coreano, Chino simplificado, Indonesio',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-developer',
@@ -88,6 +100,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Japonés',
     studyTimeEstimate: '80-100 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-cloudops',
@@ -108,6 +126,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Japonés',
     studyTimeEstimate: '80-100 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-data-engineer',
@@ -128,6 +152,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-sap',
@@ -148,6 +178,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Japonés',
     studyTimeEstimate: '150-200 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-devops-pro',
@@ -168,6 +204,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '120-160 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-security',
@@ -188,6 +230,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Japonés',
     studyTimeEstimate: '100-140 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'aws-ai',
@@ -208,6 +256,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '30-40 horas',
     officialLink: 'https://aws.amazon.com/certification/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://aws.amazon.com/certification/certification-prep/testing/',
+    registrationSteps: '1. Crear cuenta en aws.training/Certification\n2. Iniciar sesión y hacer clic en "Schedule New Exam"\n3. Seleccionar el examen y clic en "Schedule with Pearson VUE"\n4. Elegir centro de examen u online proctoring\n5. Seleccionar fecha y hora\n6. Completar pago y confirmar',
+    idRequirements: 'ID gubernamental con foto (pasaporte o carnet de conducir) + ID secundario con nombre y firma',
+    retakePolicy: '14 días de espera tras fallo. Sin límite de intentos. Pago completo cada intento.',
+    examAvailability: 'Online (proctoring 24/7 en inglés) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-900',
@@ -228,6 +282,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '15-25 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-ai-900',
@@ -248,6 +308,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '15-20 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-dp-900',
@@ -268,6 +334,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '15-20 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-sc-900',
@@ -288,6 +360,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '15-20 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-104',
@@ -308,6 +386,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-204',
@@ -328,6 +412,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-500',
@@ -348,6 +438,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-dp-203',
@@ -368,6 +464,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-ai-102',
@@ -388,6 +490,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-305',
@@ -408,6 +516,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '100-140 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-400',
@@ -428,6 +542,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '100-140 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'az-pl-300',
@@ -448,6 +568,12 @@ const CERTIFICATIONS = [
     languages: 'Español, Inglés, y muchos más',
     studyTimeEstimate: '40-60 horas',
     officialLink: 'https://learn.microsoft.com/en-us/credentials/browse/?credential_type=certification',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://learn.microsoft.com/en-us/credentials/certifications/register-schedule-exam',
+    registrationSteps: '1. Crear perfil en learn.microsoft.com\n2. Ir a la página de la certificación\n3. Hacer clic en "Schedule with Pearson VUE"\n4. Verificar nombre legal (debe coincidir con ID)\n5. Completar datos de contacto\n6. Elegir online o centro de examen\n7. Seleccionar fecha/hora (máx 90 días adelante)\n8. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida exactamente con el perfil de Microsoft Learn',
+    retakePolicy: 'Máximo 2 exámenes programados simultáneamente. 14 días de espera tras fallo.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'gcp-cdl',
@@ -468,6 +594,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '25-35 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'gcp-ace',
@@ -488,6 +620,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'gcp-pca',
@@ -508,6 +646,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '120-160 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'gcp-pde',
@@ -528,6 +672,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '120-160 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'gcp-pcd',
@@ -548,6 +698,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español',
     studyTimeEstimate: '100-140 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'gcp-pcde',
@@ -568,6 +724,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español',
     studyTimeEstimate: '100-140 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'gcp-pcse',
@@ -588,6 +750,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español',
     studyTimeEstimate: '100-140 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'gcp-pmle',
@@ -608,6 +776,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español',
     studyTimeEstimate: '120-160 horas',
     officialLink: 'https://cloud.google.com/learn/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://cloud.google.com/learn/certification',
+    registrationSteps: '1. Ir a cloud.google.com/learn/certification\n2. Seleccionar la certificación\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion o iniciar sesión\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI)',
+    retakePolicy: '14 días entre el 1er y 2do intento, 60 días entre el 2do y 3er intento, 365 días entre el 3er y 4to.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'oci-foundations',
@@ -628,6 +802,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '15-25 horas',
     officialLink: 'https://www.oracle.com/education/certification/',
+    examProvider: 'Oracle MyLearn',
+    registrationUrl: 'https://www.oracle.com/education/certification/',
+    registrationSteps: '1. Crear cuenta en Oracle MyLearn (mylearn.oracle.com)\n2. Buscar la certificación\n3. Comprar el intento de examen\n4. Seleccionar fecha (válido 6 meses)\n5. Preparar entorno (requisitos técnicos)\n6. Tomar el examen online o en centro',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Oracle MyLearn',
+    retakePolicy: 'Se puede reprogramar con 24h de antelación. Sin límite de intentos con compra separada.',
+    examAvailability: 'Online (proctoring vía Oracle) y presencial en centros Pearson VUE',
   },
   {
     id: 'oci-ai-foundations',
@@ -648,6 +828,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '15-20 horas',
     officialLink: 'https://www.oracle.com/education/certification/',
+    examProvider: 'Oracle MyLearn',
+    registrationUrl: 'https://www.oracle.com/education/certification/',
+    registrationSteps: '1. Crear cuenta en Oracle MyLearn (mylearn.oracle.com)\n2. Buscar la certificación\n3. Comprar el intento de examen\n4. Seleccionar fecha (válido 6 meses)\n5. Preparar entorno (requisitos técnicos)\n6. Tomar el examen online o en centro',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Oracle MyLearn',
+    retakePolicy: 'Se puede reprogramar con 24h de antelación. Sin límite de intentos con compra separada.',
+    examAvailability: 'Online (proctoring vía Oracle) y presencial en centros Pearson VUE',
   },
   {
     id: 'oci-architect-associate',
@@ -668,6 +854,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://www.oracle.com/education/certification/',
+    examProvider: 'Oracle MyLearn',
+    registrationUrl: 'https://www.oracle.com/education/certification/',
+    registrationSteps: '1. Crear cuenta en Oracle MyLearn (mylearn.oracle.com)\n2. Buscar la certificación\n3. Comprar el intento de examen\n4. Seleccionar fecha (válido 6 meses)\n5. Preparar entorno (requisitos técnicos)\n6. Tomar el examen online o en centro',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Oracle MyLearn',
+    retakePolicy: 'Se puede reprogramar con 24h de antelación. Sin límite de intentos con compra separada.',
+    examAvailability: 'Online (proctoring vía Oracle) y presencial en centros Pearson VUE',
   },
   {
     id: 'oci-architect-professional',
@@ -688,6 +880,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '100-140 horas',
     officialLink: 'https://www.oracle.com/education/certification/',
+    examProvider: 'Oracle MyLearn',
+    registrationUrl: 'https://www.oracle.com/education/certification/',
+    registrationSteps: '1. Crear cuenta en Oracle MyLearn (mylearn.oracle.com)\n2. Buscar la certificación\n3. Comprar el intento de examen\n4. Seleccionar fecha (válido 6 meses)\n5. Preparar entorno (requisitos técnicos)\n6. Tomar el examen online o en centro',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Oracle MyLearn',
+    retakePolicy: 'Se puede reprogramar con 24h de antelación. Sin límite de intentos con compra separada.',
+    examAvailability: 'Online (proctoring vía Oracle) y presencial en centros Pearson VUE',
   },
   {
     id: 'oci-networking',
@@ -708,6 +906,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://www.oracle.com/education/certification/',
+    examProvider: 'Oracle MyLearn',
+    registrationUrl: 'https://www.oracle.com/education/certification/',
+    registrationSteps: '1. Crear cuenta en Oracle MyLearn (mylearn.oracle.com)\n2. Buscar la certificación\n3. Comprar el intento de examen\n4. Seleccionar fecha (válido 6 meses)\n5. Preparar entorno (requisitos técnicos)\n6. Tomar el examen online o en centro',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Oracle MyLearn',
+    retakePolicy: 'Se puede reprogramar con 24h de antelación. Sin límite de intentos con compra separada.',
+    examAvailability: 'Online (proctoring vía Oracle) y presencial en centros Pearson VUE',
   },
   {
     id: 'oci-security',
@@ -728,6 +932,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://www.oracle.com/education/certification/',
+    examProvider: 'Oracle MyLearn',
+    registrationUrl: 'https://www.oracle.com/education/certification/',
+    registrationSteps: '1. Crear cuenta en Oracle MyLearn (mylearn.oracle.com)\n2. Buscar la certificación\n3. Comprar el intento de examen\n4. Seleccionar fecha (válido 6 meses)\n5. Preparar entorno (requisitos técnicos)\n6. Tomar el examen online o en centro',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Oracle MyLearn',
+    retakePolicy: 'Se puede reprogramar con 24h de antelación. Sin límite de intentos con compra separada.',
+    examAvailability: 'Online (proctoring vía Oracle) y presencial en centros Pearson VUE',
   },
   {
     id: 'oci-genai',
@@ -748,6 +958,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://www.oracle.com/education/certification/',
+    examProvider: 'Oracle MyLearn',
+    registrationUrl: 'https://www.oracle.com/education/certification/',
+    registrationSteps: '1. Crear cuenta en Oracle MyLearn (mylearn.oracle.com)\n2. Buscar la certificación\n3. Comprar el intento de examen\n4. Seleccionar fecha (válido 6 meses)\n5. Preparar entorno (requisitos técnicos)\n6. Tomar el examen online o en centro',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Oracle MyLearn',
+    retakePolicy: 'Se puede reprogramar con 24h de antelación. Sin límite de intentos con compra separada.',
+    examAvailability: 'Online (proctoring vía Oracle) y presencial en centros Pearson VUE',
   },
   {
     id: 'cka',
@@ -768,6 +984,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://training.linuxfoundation.org/certification/',
+    examProvider: 'PSI Bridge',
+    registrationUrl: 'https://training.linuxfoundation.org/certification/',
+    registrationSteps: '1. Ir a training.linuxfoundation.org/certification/\n2. Seleccionar CKA, CKAD o CKS\n3. Elegir opción de compra (solo examen o bundle)\n4. Crear cuenta Linux Foundation\n5. Recibir acceso a simulador Killer.sh\n6. Programar examen (válido 12 meses)\n7. Tomar examen online (escritorio aislado PSI)',
+    idRequirements: 'ID gubernamental válido. El examen se toma en entorno PSI Bridge (escritorio remoto aislado)',
+    retakePolicy: 'Un reintento incluido. 12 meses para programar el examen.',
+    examAvailability: 'Solo online vía PSI Bridge (escritorio aislado)',
   },
   {
     id: 'ckad',
@@ -788,6 +1010,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '60-80 horas',
     officialLink: 'https://training.linuxfoundation.org/certification/',
+    examProvider: 'PSI Bridge',
+    registrationUrl: 'https://training.linuxfoundation.org/certification/',
+    registrationSteps: '1. Ir a training.linuxfoundation.org/certification/\n2. Seleccionar CKA, CKAD o CKS\n3. Elegir opción de compra (solo examen o bundle)\n4. Crear cuenta Linux Foundation\n5. Recibir acceso a simulador Killer.sh\n6. Programar examen (válido 12 meses)\n7. Tomar examen online (escritorio aislado PSI)',
+    idRequirements: 'ID gubernamental válido. El examen se toma en entorno PSI Bridge (escritorio remoto aislado)',
+    retakePolicy: 'Un reintento incluido. 12 meses para programar el examen.',
+    examAvailability: 'Solo online vía PSI Bridge (escritorio aislado)',
   },
   {
     id: 'cks',
@@ -808,6 +1036,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://training.linuxfoundation.org/certification/',
+    examProvider: 'PSI Bridge',
+    registrationUrl: 'https://training.linuxfoundation.org/certification/',
+    registrationSteps: '1. Ir a training.linuxfoundation.org/certification/\n2. Seleccionar CKA, CKAD o CKS\n3. Elegir opción de compra (solo examen o bundle)\n4. Crear cuenta Linux Foundation\n5. Recibir acceso a simulador Killer.sh\n6. Programar examen (válido 12 meses)\n7. Tomar examen online (escritorio aislado PSI)',
+    idRequirements: 'ID gubernamental válido. El examen se toma en entorno PSI Bridge (escritorio remoto aislado)',
+    retakePolicy: 'Un reintento incluido. 12 meses para programar el examen.',
+    examAvailability: 'Solo online vía PSI Bridge (escritorio aislado)',
   },
   {
     id: 'dca',
@@ -828,6 +1062,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '40-60 horas',
     officialLink: 'https://training.mirantis.com/certification/dca-certification-exam/',
+    examProvider: 'Mirantis',
+    registrationUrl: 'https://training.mirantis.com/certification/dca-certification-exam/',
+    registrationSteps: '1. Ir a training.mirantis.com/certification/dca-certification-exam/\n2. Hacer clic en "Enroll Today"\n3. Crear cuenta Mirantis\n4. Comprar examen ($195/€180)\n5. Programar examen\n6. Preparar entorno (Mac o Windows)\n7. Tomar examen online',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta de Mirantis',
+    retakePolicy: '14 días de espera tras fallo. Pago completo cada intento.',
+    examAvailability: 'Solo online',
   },
   {
     id: 'terraform',
@@ -848,6 +1088,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '30-50 horas',
     officialLink: 'https://www.hashicorp.com/en/certification',
+    examProvider: 'Kryterion',
+    registrationUrl: 'https://www.hashicorp.com/en/certification',
+    registrationSteps: '1. Ir a hashicorp.com/en/certification\n2. Seleccionar Terraform Associate\n3. Hacer clic en "Register"\n4. Crear cuenta Kryterion\n5. Comprar examen (~€65)\n6. Seleccionar fecha y hora\n7. Tomar examen online o presencial',
+    idRequirements: 'ID gubernamental válido con foto',
+    retakePolicy: '14 días de espera tras fallo. Recertificación cada 18 meses.',
+    examAvailability: 'Online (proctoring) y presencial en centros Kryterion',
   },
   {
     id: 'ccna',
@@ -868,6 +1114,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '100-200 horas',
     officialLink: 'https://www.cisco.com/site/us/en/learn/training-certifications/index.html',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://www.cisco.com/site/us/en/learn/training-certifications/exams/registration.html',
+    registrationSteps: '1. Crear perfil en Cisco Certification Network (learningnetwork.cisco.com)\n2. Verificar información personal\n3. Ir a pearsonvue.com/cisco\n4. Seleccionar CCNA 200-301\n5. Elegir online o centro de examen\n6. Seleccionar fecha y hora\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con el perfil de Cisco',
+    retakePolicy: '5 días de espera tras fallo para la 1ra vez, 30 días para la 2da, 90 días para la 3ra. Máximo 4 intentos en 12 meses.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'comptia-a-plus-core1',
@@ -888,6 +1140,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://www.comptia.org/certifications',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://www.comptia.org/certifications',
+    registrationSteps: '1. Crear cuenta en comptia.org\n2. Ir a pearsonvue.com/comptia\n3. Seleccionar la certificación\n4. Elegir online o centro de examen\n5. Seleccionar fecha y hora\n6. Aplicar voucher si se tiene\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI). Nombre debe coincidir exactamente.',
+    retakePolicy: 'Sin período de espera para el 1er reintente. 14 días para el 2do, 14 días para el 3ro. Máximo 4 intentos en un año.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'comptia-a-plus-core2',
@@ -908,6 +1166,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://www.comptia.org/certifications',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://www.comptia.org/certifications',
+    registrationSteps: '1. Crear cuenta en comptia.org\n2. Ir a pearsonvue.com/comptia\n3. Seleccionar la certificación\n4. Elegir online o centro de examen\n5. Seleccionar fecha y hora\n6. Aplicar voucher si se tiene\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI). Nombre debe coincidir exactamente.',
+    retakePolicy: 'Sin período de espera para el 1er reintente. 14 días para el 2do, 14 días para el 3ro. Máximo 4 intentos en un año.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'comptia-network-plus',
@@ -928,6 +1192,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://www.comptia.org/certifications',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://www.comptia.org/certifications',
+    registrationSteps: '1. Crear cuenta en comptia.org\n2. Ir a pearsonvue.com/comptia\n3. Seleccionar la certificación\n4. Elegir online o centro de examen\n5. Seleccionar fecha y hora\n6. Aplicar voucher si se tiene\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI). Nombre debe coincidir exactamente.',
+    retakePolicy: 'Sin período de espera para el 1er reintente. 14 días para el 2do, 14 días para el 3ro. Máximo 4 intentos en un año.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'comptia-security-plus',
@@ -948,6 +1218,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés, Español, y muchos más',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://www.comptia.org/certifications',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://www.comptia.org/certifications',
+    registrationSteps: '1. Crear cuenta en comptia.org\n2. Ir a pearsonvue.com/comptia\n3. Seleccionar la certificación\n4. Elegir online o centro de examen\n5. Seleccionar fecha y hora\n6. Aplicar voucher si se tiene\n7. Completar pago',
+    idRequirements: 'ID gubernamental válido con foto (pasaporte, carnet de conducir o DNI). Nombre debe coincidir exactamente.',
+    retakePolicy: 'Sin período de espera para el 1er reintente. 14 días para el 2do, 14 días para el 3ro. Máximo 4 intentos en un año.',
+    examAvailability: 'Online (proctoring) y presencial en centros Pearson VUE',
   },
   {
     id: 'rhcsa',
@@ -968,6 +1244,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '80-120 horas',
     officialLink: 'https://www.redhat.com/en/services/training-and-certification',
+    examProvider: 'Red Hat',
+    registrationUrl: 'https://www.redhat.com/en/services/training-and-certification',
+    registrationSteps: '1. Ir a redhat.com/en/services/training-and-certification\n2. Buscar RHCSA EX200\n3. Seleccionar modalidad (classroom o virtual)\n4. Comprar examen (~€369)\n5. Programar fecha\n6. Preparar entorno de laboratorio\n7. Tomar examen práctico',
+    idRequirements: 'ID gubernamental válido. El examen es presencial o virtual con proctor.',
+    retakePolicy: 'Compra de examen separada para cada intento.',
+    examAvailability: 'Presencial en centros Red Hat o virtual con proctor',
   },
   {
     id: 'mongodb-associate',
@@ -988,6 +1270,12 @@ const CERTIFICATIONS = [
     languages: 'Inglés',
     studyTimeEstimate: '30-50 horas',
     officialLink: 'https://www.mongodb.com/developer/products/atlas/certifications/',
+    examProvider: 'Pearson VUE',
+    registrationUrl: 'https://university.mongodb.com/registration',
+    registrationSteps: '1. Ir a university.mongodb.com\n2. Crear cuenta gratuita\n3. Completar curso de preparación gratuito\n4. Ir a la página de certificación\n5. Programar examen con Pearson VUE\n6. Tomar examen online',
+    idRequirements: 'ID gubernamental válido con nombre que coincida con la cuenta MongoDB University',
+    retakePolicy: 'Reintento disponible tras periodo de espera.',
+    examAvailability: 'Online (proctoring) y presencial',
   },
 ];
 
@@ -1020,6 +1308,7 @@ function CatalogoTab() {
   const [branchFilter, setBranchFilter] = useState('Todos');
   const [levelFilter, setLevelFilter] = useState('Todos');
   const [providerFilter, setProviderFilter] = useState('Todos');
+  const [priceFilter, setPriceFilter] = useState('all');
   const [expandedCert, setExpandedCert] = useState(null);
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -1031,14 +1320,20 @@ function CatalogoTab() {
   }, []);
 
   const filteredCerts = useMemo(() => {
-    return CERTIFICATIONS.filter((c) => {
+    let filtered = CERTIFICATIONS.filter((c) => {
       const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.provider.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase());
       const matchBranch = branchFilter === 'Todos' || c.branch === branchFilter;
       const matchLevel = levelFilter === 'Todos' || c.level === levelFilter;
       const matchProvider = providerFilter === 'Todos' || c.provider === providerFilter;
       return matchSearch && matchBranch && matchLevel && matchProvider;
     });
-  }, [search, branchFilter, levelFilter, providerFilter]);
+    if (priceFilter === 'free') filtered = filtered.filter(c => c.isFree || c.price === 0);
+    else if (priceFilter === 'under100') filtered = filtered.filter(c => c.isFree || c.price < 100);
+    else if (priceFilter === 'under200') filtered = filtered.filter(c => c.isFree || c.price < 200);
+    else if (priceFilter === 'under300') filtered = filtered.filter(c => c.isFree || c.price < 300);
+    else if (priceFilter === 'over300') filtered = filtered.filter(c => c.price >= 300);
+    return filtered;
+  }, [search, branchFilter, levelFilter, providerFilter, priceFilter]);
 
   const groupedByProvider = useMemo(() => {
     const groups = {};
@@ -1079,6 +1374,14 @@ function CatalogoTab() {
         </Select>
         <Select w="180px" value={providerFilter} onChange={(e) => setProviderFilter(e.target.value)}>
           {providers.map((p) => <option key={p} value={p}>{p}</option>)}
+        </Select>
+        <Select size="sm" w="160px" value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)}>
+          <option value="all">Todos los precios</option>
+          <option value="free">Gratis</option>
+          <option value="under100">Menos de €100</option>
+          <option value="under200">Menos de €200</option>
+          <option value="under300">Menos de €300</option>
+          <option value="over300">Más de €300</option>
         </Select>
       </Flex>
 
@@ -1135,9 +1438,19 @@ function CatalogoTab() {
                           <Text fontSize="xs"><Text as="span" fontWeight="bold">Puntuación mínima:</Text> {cert.passingScore}</Text>
                           <Text fontSize="xs"><Text as="span" fontWeight="bold">Idiomas:</Text> {cert.languages}</Text>
                           <Text fontSize="xs"><Text as="span" fontWeight="bold">Tiempo de estudio estimado:</Text> {cert.studyTimeEstimate}</Text>
-                          <Button as="a" href={cert.officialLink} target="_blank" size="xs" variant="link" color="blue.400" rightIcon={<FiExternalLink />} w="fit-content">
+                           <Button as="a" href={cert.officialLink} target="_blank" size="xs" variant="link" color="blue.400" rightIcon={<FiExternalLink />} w="fit-content">
                             Sitio oficial
                           </Button>
+                          <Divider my={3} />
+                          <Text fontSize="xs" fontWeight="bold" mb={2}>Proceso de inscripción</Text>
+                          <VStack align="stretch" spacing={2}>
+                            <HStack><Text fontSize="xs" fontWeight="bold" w="180px">Proveedor del examen:</Text><Text fontSize="xs">{cert.examProvider}</Text></HStack>
+                            <HStack><Text fontSize="xs" fontWeight="bold" w="180px">Disponibilidad:</Text><Text fontSize="xs">{cert.examAvailability}</Text></HStack>
+                            <HStack align="flex-start"><Text fontSize="xs" fontWeight="bold" w="180px">Documentación requerida:</Text><Text fontSize="xs">{cert.idRequirements}</Text></HStack>
+                            <Box><Text fontSize="xs" fontWeight="bold" mb={1}>Pasos para inscribirse:</Text><Text fontSize="xs" whiteSpace="pre-line">{cert.registrationSteps}</Text></Box>
+                            <HStack><Text fontSize="xs" fontWeight="bold" w="180px">Política de reintento:</Text><Text fontSize="xs">{cert.retakePolicy}</Text></HStack>
+                            <Button as="a" href={cert.registrationUrl} target="_blank" size="xs" colorScheme="blue" variant="outline" leftIcon={<FiExternalLink />}>Inscribirse ahora</Button>
+                          </VStack>
                         </VStack>
                       </Collapse>
 
