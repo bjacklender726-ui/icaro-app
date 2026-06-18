@@ -5,26 +5,28 @@ import { FiHome, FiCalendar, FiBook, FiBriefcase, FiActivity, FiGrid, FiBarChart
 import useStore from '../../store/useStore';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: FiHome, color: 'brand.500' },
-  { path: '/agenda', label: 'Agenda', icon: FiCalendar, color: 'agenda.500' },
-  { path: '/oposiciones', label: 'Oposiciones', icon: FiBook, color: 'oposiciones.500' },
-  { path: '/trabajo', label: 'Trabajo', icon: FiBriefcase, color: 'trabajo.500' },
-  { path: '/gym', label: 'Gimnasio', icon: FiActivity, color: 'gym.500' },
-  { path: '/proyectos', label: 'Proyectos', icon: FiGrid, color: 'portfolio.500' },
-  { path: '/estadisticas', label: 'Estadísticas', icon: FiBarChart2, color: 'cyan.500' },
-  { path: '/automatizaciones', label: 'Automatizaciones', icon: FiZap, color: 'yellow.500' },
-  { path: '/gamificacion', label: 'Gamificación', icon: FiSettings, color: 'pink.500' },
-  { path: '/configuracion', label: 'Configuración', icon: FiSettings, color: 'gray.500' },
+  { id: 'dashboard', path: '/', label: 'Dashboard', icon: FiHome, color: 'brand.500' },
+  { id: 'agenda', path: '/agenda', label: 'Agenda', icon: FiCalendar, color: 'agenda.500' },
+  { id: 'oposiciones', path: '/oposiciones', label: 'Oposiciones', icon: FiBook, color: 'oposiciones.500' },
+  { id: 'trabajo', path: '/trabajo', label: 'Trabajo', icon: FiBriefcase, color: 'trabajo.500' },
+  { id: 'gym', path: '/gym', label: 'Gimnasio', icon: FiActivity, color: 'gym.500' },
+  { id: 'proyectos', path: '/proyectos', label: 'Proyectos', icon: FiGrid, color: 'portfolio.500' },
+  { id: 'estadisticas', path: '/estadisticas', label: 'Estadísticas', icon: FiBarChart2, color: 'cyan.500' },
+  { id: 'automatizaciones', path: '/automatizaciones', label: 'Automatizaciones', icon: FiZap, color: 'yellow.500' },
+  { id: 'gamificacion', path: '/gamificacion', label: 'Gamificación', icon: FiSettings, color: 'pink.500' },
+  { id: 'configuracion', path: '/configuracion', label: 'Configuración', icon: FiSettings, color: 'gray.500' },
 ];
 
 export default function Sidebar({ onShowAdmin }) {
   const { colorMode, toggleColorMode } = useColorMode();
   const location = useLocation();
-  const { level, xp, focusMode, notifications, user } = useStore();
+  const { level, xp, focusMode, notifications, user, hiddenModules } = useStore();
   const isAdmin = user?.role === 'admin';
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const visibleNavItems = navItems.filter(item => !(hiddenModules || []).includes(item.id));
 
   return (
     <Box
@@ -53,7 +55,7 @@ export default function Sidebar({ onShowAdmin }) {
       </Flex>
 
       <VStack spacing={1} p={2} flex={1} overflowY="auto" align="stretch">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Tooltip key={item.path} label={item.label} placement="right" hasArrow>

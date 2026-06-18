@@ -8,43 +8,50 @@ import { useRechartStyles } from '../../utils/rechartStyles';
 
 export default function Estadisticas() {
   const store = useStore();
-  const { studySessions, gymSessions, jobOffers, projectLogs, resetStats } = store;
+  const { studySessions, gymSessions, jobOffers, projectLogs, resetStats, hiddenModules } = store;
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { textColor, gridColor, tooltipBg, tooltipBorder, tooltipColor } = useRechartStyles();
   const titleColor = useColorModeValue('gray.800', 'gray.100');
 
+  const filteredStudySessions = useMemo(() => (hiddenModules || []).includes('oposiciones') ? [] : studySessions, [studySessions, hiddenModules]);
+  const filteredGymSessions = useMemo(() => (hiddenModules || []).includes('gym') ? [] : gymSessions, [gymSessions, hiddenModules]);
+  const filteredJobOffers = useMemo(() => (hiddenModules || []).includes('trabajo') ? [] : jobOffers, [jobOffers, hiddenModules]);
+  const filteredProjectLogs = useMemo(() => (hiddenModules || []).includes('proyectos') ? [] : projectLogs, [projectLogs, hiddenModules]);
+
   const last30Days = useMemo(() => {
     return Array.from({ length: 30 }, (_, i) => {
       const d = subDays(new Date(), 29 - i);
       const dateStr = format(d, 'yyyy-MM-dd');
-      const study = studySessions.filter((s) => s.date === dateStr).reduce((a, s) => a + (s.duration || 0), 0);
-      const gym = gymSessions.filter((s) => s.date === dateStr).reduce((a, s) => a + (s.duration || 0), 0);
-      const project = projectLogs.filter((l) => l.date === dateStr).reduce((a, l) => a + (l.hours || 0) * 60, 0);
+      const study = filteredStudySessions.filter((s) => s.date === dateStr).reduce((a, s) => a + (s.duration || 0), 0);
+      const gym = filteredGymSessions.filter((s) => s.date === dateStr).reduce((a, s) => a + (s.duration || 0), 0);
+      const project = filteredProjectLogs.filter((l) => l.date === dateStr).reduce((a, l) => a + (l.hours || 0) * 60, 0);
       return { date: format(d, 'dd/MM'), estudio: +(study / 60).toFixed(1), gimnasio: +(gym / 60).toFixed(1), proyectos: +(project / 60).toFixed(1), total: +((study + gym + project) / 60).toFixed(1) };
     });
-  }, [studySessions, gymSessions, projectLogs]);
+  }, [filteredStudySessions, filteredGymSessions, filteredProjectLogs]);
 
   const weeklyDistribution = useMemo(() => {
     const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     return days.map((day, i) => {
-      const sessions = [...studySessions, ...gymSessions].filter((s) => (new Date(s.date || s.createdAt).getDay() + 6) % 7 === i);
+      const sessions = [...filteredStudySessions, ...filteredGymSessions].filter((s) => (new Date(s.date || s.createdAt).getDay() + 6) % 7 === i);
       return { day, horas: +(sessions.reduce((a, s) => a + (s.duration || 0), 0) / 60).toFixed(1) };
     });
-  }, [studySessions, gymSessions]);
+  }, [filteredStudySessions, filteredGymSessions]);
 
-  const totalStudyH = +(studySessions.reduce((a, s) => a + (s.duration || 0), 0) / 60).toFixed(1);
-  const totalGymH = +(gymSessions.reduce((a, s) => a + (s.duration || 0), 0) / 60).toFixed(1);
-  const totalProjectH = +(projectLogs.reduce((a, l) => a + (l.hours || 0), 0)).toFixed(1);
+  const totalStudyH = +(filteredStudySessions.reduce((a, s) => a + (s.duration || 0), 0) / 60).toFixed(1);
+  const totalGymH = +(filteredGymSessions.reduce((a, s) => a + (s.duration || 0), 0) / 60).toFixed(1);
+  const totalProjectH = +(filteredProjectLogs.reduce((a, l) => a + (l.hours || 0), 0)).toFixed(1);
   const totalAllH = totalStudyH + totalGymH + totalProjectH;
 
-  const moduleDistribution = [
-    { module: 'Estudio', hours: totalStudyH },
-    { module: 'Gimnasio', hours: totalGymH },
-    { module: 'Proyectos', hours: totalProjectH },
-    { module: 'Trabajo', hours: +(jobOffers.length * 0.5).toFixed(1) },
-  ];
+  const moduleDistribution = useMemo(() => {
+    const dist = [];
+    if (!(hiddenModules || []).includes('oposiciones')) dist.push({ module: 'Estudio', hours: totalStudyH });
+    if (!(hiddenModules || []).includes('gym')) dist.push({ module: 'Gimnasio', hours: totalGymH });
+    if (!(hiddenModules || []).includes('proyectos')) dist.push({ module: 'Proyectos', hours: totalProjectH });
+    if (!(hiddenModules || []).includes('trabajo')) dist.push({ module: 'Trabajo', hours: +(filteredJobOffers.length * 0.5).toFixed(1) });
+    return dist;
+  }, [totalStudyH, totalGymH, totalProjectH, filteredJobOffers, hiddenModules]);
 
   const COLORS = ['#4299E1', '#E53E3E', '#9F7AEA', '#ED8936'];
 
@@ -53,6 +60,11 @@ export default function Estadisticas() {
     last30Days.forEach((d) => { if (d.total > 0) dayData[d.date] = d.total; });
     return Object.entries(dayData).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [last30Days]);
+
+  const showStudy = !(hiddenModules || []).includes('oposiciones');
+  const showGym = !(hiddenModules || []).includes('gym');
+  const showProyectos = !(hiddenModules || []).includes('proyectos');
+  const showTrabajo = !(hiddenModules || []).includes('trabajo');
 
   return (
     <Box>
@@ -65,15 +77,21 @@ export default function Estadisticas() {
         <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
           <Stat><StatLabel>Tiempo Total</StatLabel><StatNumber>{totalAllH}h</StatNumber></Stat>
         </Box>
-        <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-          <Stat><StatLabel><FiBook style={{ display: 'inline', marginRight: 4 }} />Estudio</StatLabel><StatNumber color="blue.500">{totalStudyH}h</StatNumber></Stat>
-        </Box>
-        <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-          <Stat><StatLabel><FiActivity style={{ display: 'inline', marginRight: 4 }} />Gimnasio</StatLabel><StatNumber color="red.500">{totalGymH}h</StatNumber></Stat>
-        </Box>
-        <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-          <Stat><StatLabel><FiGrid style={{ display: 'inline', marginRight: 4 }} />Proyectos</StatLabel><StatNumber color="purple.500">{totalProjectH}h</StatNumber></Stat>
-        </Box>
+        {showStudy && (
+          <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+            <Stat><StatLabel><FiBook style={{ display: 'inline', marginRight: 4 }} />Estudio</StatLabel><StatNumber color="blue.500">{totalStudyH}h</StatNumber></Stat>
+          </Box>
+        )}
+        {showGym && (
+          <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+            <Stat><StatLabel><FiActivity style={{ display: 'inline', marginRight: 4 }} />Gimnasio</StatLabel><StatNumber color="red.500">{totalGymH}h</StatNumber></Stat>
+          </Box>
+        )}
+        {showProyectos && (
+          <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+            <Stat><StatLabel><FiGrid style={{ display: 'inline', marginRight: 4 }} />Proyectos</StatLabel><StatNumber color="purple.500">{totalProjectH}h</StatNumber></Stat>
+          </Box>
+        )}
       </SimpleGrid>
 
       <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={5} mb={5}>
@@ -90,9 +108,9 @@ export default function Estadisticas() {
               <XAxis dataKey="date" fontSize={10} interval={4} tick={{ fill: textColor }} />
               <YAxis fontSize={12} tick={{ fill: textColor }} />
               <Tooltip contentStyle={{ bg: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '8px', color: tooltipColor }} />
-              <Area type="monotone" dataKey="estudio" stroke="#4299E1" fill="url(#g1)" />
-              <Area type="monotone" dataKey="gimnasio" stroke="#E53E3E" fill="url(#g2)" />
-              <Area type="monotone" dataKey="proyectos" stroke="#9F7AEA" fill="url(#g3)" />
+              {showStudy && <Area type="monotone" dataKey="estudio" stroke="#4299E1" fill="url(#g1)" />}
+              {showGym && <Area type="monotone" dataKey="gimnasio" stroke="#E53E3E" fill="url(#g2)" />}
+              {showProyectos && <Area type="monotone" dataKey="proyectos" stroke="#9F7AEA" fill="url(#g3)" />}
             </AreaChart>
           </ResponsiveContainer>
         </Box>
@@ -163,5 +181,3 @@ export default function Estadisticas() {
     </Box>
   );
 }
-
-

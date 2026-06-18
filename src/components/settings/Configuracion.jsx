@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Grid, Text, VStack, HStack, Badge, Button, IconButton, Switch, FormControl, FormLabel, Input, Select, useColorMode, useColorModeValue, Divider, SimpleGrid, Stat, StatLabel, StatNumber, Alert, AlertIcon, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, Flex } from '@chakra-ui/react';
-import { FiSettings, FiShield, FiDatabase, FiDownload, FiUpload, FiTrash2, FiSave, FiClock } from 'react-icons/fi';
+import { FiSettings, FiShield, FiDatabase, FiDownload, FiUpload, FiTrash2, FiSave, FiClock, FiGrid, FiBook, FiBriefcase, FiHeart, FiFolder } from 'react-icons/fi';
 import useStore from '../../store/useStore';
 
 export default function Configuracion() {
   const { colorMode, toggleColorMode } = useColorMode();
   const store = useStore();
-  const { backups, createBackup, restoreBackup, deleteBackup, clearSection, clearAll } = store;
+  const { backups, createBackup, restoreBackup, deleteBackup, clearSection, clearAll, hiddenModules, toggleModuleVisibility, user } = store;
   const { isOpen: isClearAllOpen, onOpen: onClearAllOpen, onClose: onClearAllClose } = useDisclosure();
   const { isOpen: isClearSectionOpen, onOpen: onClearSectionOpen, onClose: onClearSectionClose } = useDisclosure();
   const { isOpen: isRestoreOpen, onOpen: onRestoreOpen, onClose: onRestoreClose } = useDisclosure();
@@ -77,6 +77,28 @@ export default function Configuracion() {
               </FormControl>
             </VStack>
           </Box>
+
+          {user?.role === 'admin' && (
+            <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <HStack mb={4}><FiGrid /><Text fontWeight="bold">Módulos Visibles</Text></HStack>
+              <Text fontSize="sm" color="gray.500" mb={3}>Solo el admin puede mostrar/ocultar módulos. Al ocultar, desaparecen del menú y de las estadísticas.</Text>
+              <VStack spacing={3} align="stretch">
+                {[
+                  { id: 'agenda', label: 'Agenda' },
+                  { id: 'oposiciones', label: 'Oposiciones' },
+                  { id: 'trabajo', label: 'Trabajo' },
+                  { id: 'gym', label: 'Gimnasio' },
+                  { id: 'proyectos', label: 'Proyectos' },
+                  { id: 'automatizaciones', label: 'Automatizaciones' },
+                ].map((m) => (
+                  <Flex key={m.id} justify="space-between" align="center">
+                    <Text fontSize="sm">{m.label}</Text>
+                    <Switch isChecked={!(hiddenModules || []).includes(m.id)} onChange={() => toggleModuleVisibility(m.id)} colorScheme="green" />
+                  </Flex>
+                ))}
+              </VStack>
+            </Box>
+          )}
 
           <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
             <HStack mb={4}><FiSave /><Text fontWeight="bold">Copias de Seguridad</Text></HStack>

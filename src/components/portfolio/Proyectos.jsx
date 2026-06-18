@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Progress, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel, Wrap, WrapItem, Tag, Collapse, Switch, Checkbox, Tooltip } from '@chakra-ui/react';
 import { FiPlus, FiTrash2, FiEdit3, FiGrid, FiClock, FiChevronDown, FiChevronRight, FiTrendingUp, FiLink, FiImage, FiVideo, FiFileText, FiX } from 'react-icons/fi';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import useStore from '../../store/useStore';
 import { formatDate } from '../../utils/helpers';
 import { useRechartStyles } from '../../utils/rechartStyles';
@@ -613,12 +613,84 @@ function ProjectStats() {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const logRowBg = useColorModeValue('gray.50', 'gray.700');
-  const taskBorder = useColorModeValue('gray.300', 'gray.600');
+  const cardBg = useColorModeValue('gray.50', 'gray.750');
+  const progressTrackBg = useColorModeValue('gray.100', 'gray.600');
   const [periodFilter, setPeriodFilter] = useState('daily');
   const [filterDate, setFilterDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const { textColor, gridColor, tooltipBg, tooltipBorder, tooltipColor } = useRechartStyles();
 
+  const PIE_COLORS = ['#9F7AEA', '#4FD1C5', '#F6AD55', '#FC8181', '#63B3ED', '#B794F4', '#F687B3', '#68D391', '#FBD38D', '#A0AEC0'];
+
   const totalHours = useMemo(() => +(projectLogs.reduce((a, l) => a + (l.hours || 0), 0)).toFixed(1), [projectLogs]);
+
+  const totalEstimatedHours = useMemo(() => {
+    return projects.reduce((sum, p) => {
+      const projectEst = (p.tasks || []).reduce((a, t) => a + (parseFloat(t.estimatedHours) || 0), 0);
+      return sum + projectEst;
+    }, 0);
+  }, [projects]);
+
+  const avgCompletion = useMemo(() => {
+    if (projects.length === 0) return 0;
+    const total = projects.reduce((sum, p) => {
+      const totalTasks = (p.tasks || []).length;
+      if (totalTasks === 0) return sum;
+      const completedTasks = (p.tasks || []).filter((t) => t.completed).length;
+      return sum + (completedTasks / totalTasks) * 100;
+    }, 0);
+    return +(total / projects.length).toFixed(1);
+  }, [projects]);
+
+  const projectsWithStats = useMemo(() => {
+    return projects.map((p) => {
+      const totalTasks = (p.tasks || []).length;
+      const completedTasks = (p.tasks || []).filter((t) => t.completed).length;
+      const estimated = (p.tasks || []).reduce((a, t) => a + (parseFloat(t.estimatedHours) || 0), 0);
+      const logged = projectLogs.filter((l) => l.projectId === p.id).reduce((a, l) => a + (l.hours || 0), 0);
+      let status = 'Sin empezar';
+      if (totalTasks > 0 && completedTasks === totalTasks) status = 'Completado';
+      else if (completedTasks > 0) status = 'En progreso';
+      return { ...p, totalTasks, completedTasks, estimated, logged, status };
+    });
+  }, [projects, projectLogs]);
+
+  const techDistribution = useMemo(() => {
+    const techCount = {};
+    projects.forEach((p) => {
+      (p.technologies || []).forEach((tech) => {
+        techCount[tech] = (techCount[tech] || 0) + 1;
+      });
+    });
+    return Object.entries(techCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [projects]);
+
+  const totalLogged = totalHours;
+
+  const estimationAccuracy = useMemo(() => {
+    const diff = totalLogged - totalEstimatedHours;
+    const accuracy = totalEstimatedHours > 0 ? Math.min(100, +((totalLogged / totalEstimatedHours) * 100).toFixed(1)) : 0;
+    return { diff: +diff.toFixed(1), accuracy };
+  }, [totalEstimatedHours, totalLogged]);
+
+  const taskTimeline = useMemo(() => {
+    const now = new Date();
+    const days = eachDayOfInterval({ start: subDays(now, 29), end: now });
+    let cumulative = 0;
+    return days.map((d) => {
+      const dStr = format(d, 'yyyy-MM-dd');
+      const dayCompletions = projectLogs.filter((l) => l.date === dStr).reduce((a, l) => {
+        const proj = projects.find((p) => p.id === l.projectId);
+        if (!proj) return a;
+        const task = (proj.tasks || []).find((t) => t.id === l.taskId);
+        if (task && task.completed) return a + 1;
+        return a;
+      }, 0);
+      cumulative += dayCompletions;
+      return { day: format(d, 'dd/MM'), tareas: cumulative };
+    });
+  }, [projectLogs, projects]);
 
   const dailyData = useMemo(() => {
     const now = new Date();
@@ -661,15 +733,18 @@ function ProjectStats() {
 
   return (
     <Box>
-      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={6}>
-        <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-          <Stat><StatLabel>Horas Totales</StatLabel><StatNumber>{totalHours}h</StatNumber></Stat>
-        </Box>
+      <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4} mb={6}>
         <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
           <Stat><StatLabel>Proyectos</StatLabel><StatNumber>{projects.length}</StatNumber></Stat>
         </Box>
         <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-          <Stat><StatLabel>Horas {formatDate(filterDate)}</StatLabel><StatNumber color="blue.500">{filteredHours}h</StatNumber></Stat>
+          <Stat><StatLabel>Horas Estimadas</StatLabel><StatNumber color="purple.500">{totalEstimatedHours}h</StatNumber></Stat>
+        </Box>
+        <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+          <Stat><StatLabel>Horas Registradas</StatLabel><StatNumber color="green.500">{totalHours}h</StatNumber></Stat>
+        </Box>
+        <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+          <Stat><StatLabel>Completado Prom.</StatLabel><StatNumber color="blue.500">{avgCompletion}%</StatNumber></Stat>
         </Box>
       </SimpleGrid>
 
@@ -698,7 +773,11 @@ function ProjectStats() {
 
         <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
           <Text fontWeight="bold" mb={3}>Filtrar por Día</Text>
-          <Input type="date" size="sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} mb={3} />
+          <Input type="date" size="sm" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} mb={2} />
+          <HStack justify="space-between" mb={3}>
+            <Text fontSize="xs" color="gray.500">Registros: {filteredLogs.length}</Text>
+            <Badge colorScheme="blue" fontSize="xs">{filteredHours}h</Badge>
+          </HStack>
           <VStack align="stretch" spacing={2} maxH="250px" overflowY="auto">
             {filteredLogs.length === 0 && <Text color="gray.500" fontSize="sm">Sin registros</Text>}
             {filteredLogs.map((l) => {
@@ -718,6 +797,131 @@ function ProjectStats() {
           </VStack>
         </Box>
       </Grid>
+
+      <Text fontWeight="bold" fontSize="lg" mb={3}>Progreso por Proyecto</Text>
+      <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} mb={5}>
+        {projectsWithStats.length === 0 ? (
+          <Text color="gray.500" textAlign="center" py={4}>No hay proyectos registrados</Text>
+        ) : (
+          <Box overflowX="auto">
+            <Box as="table" w="100%" borderCollapse="collapse">
+              <Box as="thead">
+                <Box as="tr" borderBottom="2px solid" borderColor={borderColor}>
+                  <Box as="th" textAlign="left" pb={3} fontSize="xs" color="gray.500" textTransform="uppercase">Proyecto</Box>
+                  <Box as="th" textAlign="center" pb={3} fontSize="xs" color="gray.500" textTransform="uppercase">Tareas</Box>
+                  <Box as="th" textAlign="center" pb={3} fontSize="xs" color="gray.500" textTransform="uppercase" minW="120px">Progreso</Box>
+                  <Box as="th" textAlign="right" pb={3} fontSize="xs" color="gray.500" textTransform="uppercase">Estimado</Box>
+                  <Box as="th" textAlign="right" pb={3} fontSize="xs" color="gray.500" textTransform="uppercase">Registrado</Box>
+                  <Box as="th" textAlign="center" pb={3} fontSize="xs" color="gray.500" textTransform="uppercase">Estado</Box>
+                </Box>
+              </Box>
+              <Box as="tbody">
+                {projectsWithStats.map((p) => {
+                  const pct = p.totalTasks > 0 ? Math.round((p.completedTasks / p.totalTasks) * 100) : 0;
+                  const statusColor = p.status === 'Completado' ? 'green' : p.status === 'En progreso' ? 'blue' : 'gray';
+                  return (
+                    <Box as="tr" key={p.id} borderBottom="1px solid" borderColor={borderColor}>
+                      <Box as="td" py={3} fontWeight="bold" fontSize="sm">{p.name}</Box>
+                      <Box as="td" py={3} textAlign="center" fontSize="sm">{p.completedTasks}/{p.totalTasks}</Box>
+                      <Box as="td" py={3}>
+                        <Flex align="center" gap={2}>
+                          <Progress flex={1} value={pct} size="sm" colorScheme={pct === 100 ? 'green' : 'blue'} borderRadius="full" bg={progressTrackBg} />
+                          <Text fontSize="xs" color="gray.500" minW="36px" textAlign="right">{pct}%</Text>
+                        </Flex>
+                      </Box>
+                      <Box as="td" py={3} textAlign="right" fontSize="sm">
+                        <Badge colorScheme="purple" variant="subtle">{p.estimated}h</Badge>
+                      </Box>
+                      <Box as="td" py={3} textAlign="right" fontSize="sm">
+                        <Badge colorScheme="green" variant="subtle">{p.logged.toFixed(1)}h</Badge>
+                      </Box>
+                      <Box as="td" py={3} textAlign="center">
+                        <Badge colorScheme={statusColor}>{p.status}</Badge>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          </Box>
+        )}
+      </Box>
+
+      <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={5} mb={5}>
+        <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+          <Text fontWeight="bold" mb={4}>Precisión de Estimaciones</Text>
+          <SimpleGrid columns={2} spacing={4} mb={4}>
+            <Box p={3} bg={cardBg} borderRadius="lg" textAlign="center">
+              <Text fontSize="xs" color="gray.500" mb={1}>Estimado</Text>
+              <Text fontWeight="bold" fontSize="xl" color="purple.500">{totalEstimatedHours}h</Text>
+            </Box>
+            <Box p={3} bg={cardBg} borderRadius="lg" textAlign="center">
+              <Text fontSize="xs" color="gray.500" mb={1}>Registrado</Text>
+              <Text fontWeight="bold" fontSize="xl" color="green.500">{totalLogged}h</Text>
+            </Box>
+          </SimpleGrid>
+          <Box p={3} bg={cardBg} borderRadius="lg" textAlign="center" mb={3}>
+            <Text fontSize="xs" color="gray.500" mb={1}>Diferencia</Text>
+            <Text fontWeight="bold" fontSize="xl" color={estimationAccuracy.diff > 0 ? 'red.500' : 'green.500'}>
+              {estimationAccuracy.diff > 0 ? '+' : ''}{estimationAccuracy.diff}h
+            </Text>
+            <Text fontSize="xs" color="gray.400">{estimationAccuracy.diff > 0 ? 'Sobreestimado' : estimationAccuracy.diff < 0 ? 'Subestimado' : 'Exacto'}</Text>
+          </Box>
+          <Box>
+            <Flex justify="space-between" mb={1}>
+              <Text fontSize="xs" color="gray.500">Precisión</Text>
+              <Text fontSize="xs" fontWeight="bold">{estimationAccuracy.accuracy}%</Text>
+            </Flex>
+            <Progress value={estimationAccuracy.accuracy} size="sm" colorScheme={estimationAccuracy.accuracy >= 90 ? 'green' : estimationAccuracy.accuracy >= 70 ? 'yellow' : 'red'} borderRadius="full" bg={progressTrackBg} />
+          </Box>
+        </Box>
+
+        <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+          <Text fontWeight="bold" mb={3}>Distribución de Tecnologías</Text>
+          {techDistribution.length === 0 ? (
+            <Text color="gray.500" textAlign="center" py={8}>No hay tecnologías registradas</Text>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={techDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
+                  paddingAngle={3}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                  fontSize={11}
+                  fill={textColor}
+                >
+                  {techDistribution.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip
+                  contentStyle={{ bg: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '8px', color: tooltipColor }}
+                  formatter={(value, name) => [`${value} proyectos`, name]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </Box>
+      </Grid>
+
+      <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} mb={5}>
+        <Text fontWeight="bold" mb={3}>Línea de Tiempo - Tareas Completadas (30 días)</Text>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={taskTimeline}>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+            <XAxis dataKey="day" fontSize={10} tick={{ fill: textColor }} interval={4} />
+            <YAxis tick={{ fill: textColor }} allowDecimals={false} />
+            <RechartsTooltip contentStyle={{ bg: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '8px', color: tooltipColor }} />
+            <Bar dataKey="tareas" fill="#4FD1C5" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
     </Box>
   );
 }

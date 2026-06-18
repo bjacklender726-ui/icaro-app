@@ -39,7 +39,7 @@ const migrateUserData = (data) => {
     }
     return [];
   };
-  const result = { ...data, convocatoria: toArr(data.convocatoria), oposicionesPizarra: toArr(data.oposicionesPizarra) };
+  const result = { ...data, convocatoria: toArr(data.convocatoria), oposicionesPizarra: toArr(data.oposicionesPizarra), hiddenModules: data.hiddenModules || [] };
   if (data.proyectosPizarra && !data.projectPizarras) {
     result.projectPizarras = { general: toArr(data.proyectosPizarra) };
   } else {
@@ -56,7 +56,7 @@ const getDefaultData = () => ({
   jobOffers: [], gymRoutines: [], gymSessions: [], gymGoals: [],
   projects: [], projectLogs: [], projectPizarras: {}, automations: [],
   notifications: [], xp: 0, level: 1, badges: [], dailyMissions: [],
-  backups: [], focusMode: false, pomodoroActive: false, pomodoroMinutes: 25,
+  backups: [], focusMode: false, pomodoroActive: false, pomodoroMinutes: 25, hiddenModules: [],
 });
 
 const DATA_FIELDS = Object.keys(getDefaultData());
@@ -545,6 +545,8 @@ const useStore = create((set, get) => {
     setPomodoro: (min) => { set({ pomodoroMinutes: min }); setTimeout(saveCurrentUserData, 0); },
     togglePomodoro: () => { set((s) => ({ pomodoroActive: !s.pomodoroActive })); setTimeout(saveCurrentUserData, 0); },
 
+    toggleModuleVisibility: (moduleId) => { set((s) => { const hidden = s.hiddenModules || []; const newHidden = hidden.includes(moduleId) ? hidden.filter((m) => m !== moduleId) : [...hidden, moduleId]; return { hiddenModules: newHidden }; }); setTimeout(saveCurrentUserData, 0); },
+
     addNotification: (n) => { set((s) => ({ notifications: [{ ...n, id: uuidv4(), read: false, createdAt: new Date().toISOString() }, ...s.notifications] })); setTimeout(saveCurrentUserData, 0); },
     markNotificationRead: (id) => { set((s) => ({ notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) })); setTimeout(saveCurrentUserData, 0); },
     clearNotifications: () => { set({ notifications: [] }); setTimeout(saveCurrentUserData, 0); },
@@ -555,7 +557,7 @@ const useStore = create((set, get) => {
       const state = get();
       const backup = {
         id: uuidv4(), name: name || `Backup ${new Date().toLocaleString('es')}`, date: new Date().toISOString(),
-        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, projectPizarras: state.projectPizarras, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, xp: state.xp, level: state.level, badges: state.badges },
+        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, projectPizarras: state.projectPizarras, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, xp: state.xp, level: state.level, badges: state.badges, hiddenModules: state.hiddenModules },
       };
       set((s) => ({ backups: [backup, ...s.backups] }));
       setTimeout(saveCurrentUserData, 0);
@@ -566,7 +568,7 @@ const useStore = create((set, get) => {
       const backup = state.backups.find((b) => b.id === backupId);
       if (backup && backup.data) {
         set({
-          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], projectPizarras: backup.data.projectPizarras || {}, automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || [], xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [],
+          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], projectPizarras: backup.data.projectPizarras || {}, automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || [], xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [], hiddenModules: backup.data.hiddenModules || [],
         });
         setTimeout(saveCurrentUserData, 0);
       }
