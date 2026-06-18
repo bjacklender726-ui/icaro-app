@@ -39,7 +39,21 @@ const migrateUserData = (data) => {
     }
     return [];
   };
-  const result = { ...data, convocatoria: toArr(data.convocatoria), oposicionesPizarra: toArr(data.oposicionesPizarra), hiddenModules: data.hiddenModules || [] };
+  const result = { ...data, convocatoria: toArr(data.convocatoria), hiddenModules: data.hiddenModules || [] };
+
+  if (Array.isArray(data.oposicionesPizarra) && data.oposicionesPizarra.length > 0) {
+    result.oposicionesPizarra = {
+      general: {
+        'default-board': { name: 'General', items: data.oposicionesPizarra, createdAt: new Date().toISOString() }
+      }
+    };
+  } else if (data.oposicionesPizarra && typeof data.oposicionesPizarra === 'object' && !Array.isArray(data.oposicionesPizarra)) {
+    result.oposicionesPizarra = data.oposicionesPizarra;
+  } else {
+    result.oposicionesPizarra = {};
+  }
+
+  result.oposicionesKanbans = data.oposicionesKanbans || {};
   if (data.proyectosPizarra && !data.projectPizarras) {
     result.projectPizarras = { general: toArr(data.proyectosPizarra) };
   } else {
@@ -52,7 +66,7 @@ const migrateUserData = (data) => {
 const getDefaultData = () => ({
   agendaTasks: [], temarios: [], studySessions: [], tests: [], testResults: [],
   convocatoria: [],
-  supuestosPracticos: [], simulacros: [], oposicionesPizarra: [],
+  supuestosPracticos: [], simulacros: [], oposicionesPizarra: {}, oposicionesKanbans: {},
   jobOffers: [], gymRoutines: [], gymSessions: [], gymGoals: [],
   projects: [], projectLogs: [], projectPizarras: {}, automations: [],
   notifications: [], xp: 0, level: 1, badges: [], dailyMissions: [],
@@ -495,9 +509,122 @@ const useStore = create((set, get) => {
     updateConvocatoria: (id, data) => { set((s) => ({ convocatoria: s.convocatoria.map((c) => (c.id === id ? { ...c, ...data } : c)) })); setTimeout(saveCurrentUserData, 0); },
     deleteConvocatoria: (id) => { set((s) => ({ convocatoria: s.convocatoria.filter((c) => c.id !== id) })); setTimeout(saveCurrentUserData, 0); },
 
-    addOposicionesPizarraItem: (item) => { set((s) => ({ oposicionesPizarra: [...s.oposicionesPizarra, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
-    updateOposicionesPizarraItem: (id, data) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
-    deleteOposicionesPizarraItem: (id) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
+    addOposicionesBoard: (convId, name) => {
+      const boardId = uuidv4();
+      set((s) => ({
+        oposicionesPizarra: {
+          ...s.oposicionesPizarra,
+          [convId]: {
+            ...(s.oposicionesPizarra[convId] || {}),
+            [boardId]: { name, items: [], createdAt: new Date().toISOString() }
+          }
+        }
+      }));
+      setTimeout(saveCurrentUserData, 0);
+      return boardId;
+    },
+    deleteOposicionesBoard: (convId, boardId) => {
+      set((s) => {
+        const boards = { ...(s.oposicionesPizarra[convId] || {}) };
+        delete boards[boardId];
+        return { oposicionesPizarra: { ...s.oposicionesPizarra, [convId]: boards } };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    renameOposicionesBoard: (convId, boardId, name) => {
+      set((s) => ({
+        oposicionesPizarra: {
+          ...s.oposicionesPizarra,
+          [convId]: {
+            ...(s.oposicionesPizarra[convId] || {}),
+            [boardId]: { ...(s.oposicionesPizarra[convId]?.[boardId] || {}), name }
+          }
+        }
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
+    addOposicionesPizarraItem: (convId, boardId, item) => {
+      set((s) => {
+        const boards = s.oposicionesPizarra[convId] || {};
+        const board = boards[boardId] || { name: '', items: [] };
+        return {
+          oposicionesPizarra: {
+            ...s.oposicionesPizarra,
+            [convId]: {
+              ...boards,
+              [boardId]: { ...board, items: [...board.items, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] }
+            }
+          }
+        };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    updateOposicionesPizarraItem: (convId, boardId, id, data) => {
+      set((s) => {
+        const boards = s.oposicionesPizarra[convId] || {};
+        const board = boards[boardId] || { name: '', items: [] };
+        return {
+          oposicionesPizarra: {
+            ...s.oposicionesPizarra,
+            [convId]: {
+              ...boards,
+              [boardId]: { ...board, items: board.items.map((p) => (p.id === id ? { ...p, ...data } : p)) }
+            }
+          }
+        };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    deleteOposicionesPizarraItem: (convId, boardId, id) => {
+      set((s) => {
+        const boards = s.oposicionesPizarra[convId] || {};
+        const board = boards[boardId] || { name: '', items: [] };
+        return {
+          oposicionesPizarra: {
+            ...s.oposicionesPizarra,
+            [convId]: {
+              ...boards,
+              [boardId]: { ...board, items: board.items.filter((p) => p.id !== id) }
+            }
+          }
+        };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    addOposicionesKanbanBoard: (convId, name) => {
+      const boardId = uuidv4();
+      set((s) => ({
+        oposicionesKanbans: {
+          ...s.oposicionesKanbans,
+          [convId]: {
+            ...(s.oposicionesKanbans[convId] || {}),
+            [boardId]: { name, createdAt: new Date().toISOString() }
+          }
+        }
+      }));
+      setTimeout(saveCurrentUserData, 0);
+      return boardId;
+    },
+    deleteOposicionesKanbanBoard: (convId, boardId) => {
+      set((s) => {
+        const boards = { ...(s.oposicionesKanbans[convId] || {}) };
+        delete boards[boardId];
+        return { oposicionesKanbans: { ...s.oposicionesKanbans, [convId]: boards } };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    renameOposicionesKanbanBoard: (convId, boardId, name) => {
+      set((s) => ({
+        oposicionesKanbans: {
+          ...s.oposicionesKanbans,
+          [convId]: {
+            ...(s.oposicionesKanbans[convId] || {}),
+            [boardId]: { ...(s.oposicionesKanbans[convId]?.[boardId] || {}), name }
+          }
+        }
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
 
     addProjectBoard: (projectId, name) => {
       const boardId = uuidv4();
@@ -665,7 +792,7 @@ const useStore = create((set, get) => {
       const state = get();
       const backup = {
         id: uuidv4(), name: name || `Backup ${new Date().toLocaleString('es')}`, date: new Date().toISOString(),
-        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, projectPizarras: state.projectPizarras, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, xp: state.xp, level: state.level, badges: state.badges, hiddenModules: state.hiddenModules },
+        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, projectPizarras: state.projectPizarras, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, oposicionesKanbans: state.oposicionesKanbans, xp: state.xp, level: state.level, badges: state.badges, hiddenModules: state.hiddenModules },
       };
       set((s) => ({ backups: [backup, ...s.backups] }));
       setTimeout(saveCurrentUserData, 0);
@@ -676,7 +803,7 @@ const useStore = create((set, get) => {
       const backup = state.backups.find((b) => b.id === backupId);
       if (backup && backup.data) {
         set({
-          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], projectPizarras: backup.data.projectPizarras || {}, automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || [], xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [], hiddenModules: backup.data.hiddenModules || [],
+          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], projectPizarras: backup.data.projectPizarras || {}, automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || {}, oposicionesKanbans: backup.data.oposicionesKanbans || {}, xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [], hiddenModules: backup.data.hiddenModules || [],
         });
         setTimeout(saveCurrentUserData, 0);
       }
@@ -686,7 +813,7 @@ const useStore = create((set, get) => {
     clearSection: (section) => {
       const resets = {
         agenda: { agendaTasks: [] },
-        oposiciones: { temarios: [], studySessions: [], tests: [], testResults: [], supuestosPracticos: [], simulacros: [], convocatoria: [], oposicionesPizarra: [] },
+        oposiciones: { temarios: [], studySessions: [], tests: [], testResults: [], supuestosPracticos: [], simulacros: [], convocatoria: [], oposicionesPizarra: {}, oposicionesKanbans: {} },
         trabajo: { jobOffers: [] },
         gym: { gymRoutines: [], gymSessions: [], gymGoals: [] },
         proyectos: { projects: [], projectLogs: [], projectPizarras: {} },

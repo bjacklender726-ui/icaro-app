@@ -492,7 +492,6 @@ function SupuestosPracticosManager({ selectedConvId }) {
   const [form, setForm] = useState({ titulo: '', materia: '', fecha: '', puntuacion: '', tiempoEmpleado: '', completado: false, notas: '' });
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const cardBg = useColorModeValue('gray.50', 'gray.700');
   const importRef = React.useRef(null);
 
   const filteredSupuestos = useMemo(() =>
@@ -763,38 +762,86 @@ function SimulacrosManager({ selectedConvId }) {
   );
 }
 
-// ===== PIZARRA MANAGER =====
+// ===== PIZARRA MANAGER (multi-board) =====
 function PizarraManager({ selectedConvId }) {
-  const { oposicionesPizarra, addOposicionesPizarraItem, updateOposicionesPizarraItem, deleteOposicionesPizarraItem, addAgendaTask } = useStore();
+  const { oposicionesPizarra, addOposicionesBoard, deleteOposicionesBoard, renameOposicionesBoard, addOposicionesPizarraItem, updateOposicionesPizarraItem, deleteOposicionesPizarraItem, addAgendaTask, temarios } = useStore();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isTaskOpen, onOpen: onTaskOpen, onClose: onTaskClose } = useDisclosure();
+  const [selectedBoardId, setSelectedBoardId] = useState('');
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ type: 'text', title: '', content: '', linkedTo: '' });
   const [taskForm, setTaskForm] = useState({ title: '', description: '', date: '' });
   const [taskItem, setTaskItem] = useState(null);
   const [dragging, setDragging] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [newBoardName, setNewBoardName] = useState('');
+  const [renameBoardName, setRenameBoardName] = useState('');
+  const [renamingBoard, setRenamingBoard] = useState(null);
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const boardBg = useColorModeValue('gray.50', 'gray.900');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
   const importRef = React.useRef(null);
 
-  const filteredPizarra = useMemo(() =>
-    oposicionesPizarra.filter((p) => !selectedConvId || p.convocatoriaId === selectedConvId),
-    [oposicionesPizarra, selectedConvId]
-  );
+  const convBoards = useMemo(() => {
+    if (!selectedConvId) {
+      const all = {};
+      Object.values(oposicionesPizarra).forEach((boards) => {
+        Object.entries(boards).forEach(([bid, b]) => { all[bid] = b; });
+      });
+      return all;
+    }
+    return oposicionesPizarra[selectedConvId] || {};
+  }, [oposicionesPizarra, selectedConvId]);
+
+  const boardIds = Object.keys(convBoards);
+
+  React.useEffect(() => {
+    if (boardIds.length > 0 && !boardIds.includes(selectedBoardId)) {
+      setSelectedBoardId(boardIds[0]);
+    } else if (boardIds.length === 0) {
+      setSelectedBoardId('');
+    }
+  }, [boardIds.join(','), selectedBoardId]);
+
+  const currentBoard = selectedBoardId ? convBoards[selectedBoardId] : null;
+  const items = currentBoard ? (currentBoard.items || []) : [];
+
+  const linkedItems = useMemo(() => {
+    if (!selectedBoardId || !selectedConvId) return [];
+    return items;
+  }, [items, selectedBoardId, selectedConvId]);
 
   const extractYouTubeId = (url) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([^&?#]+)/);
     return match ? match[1] : null;
   };
 
+  const handleCreateBoard = () => {
+    if (!newBoardName.trim() || !selectedConvId) return;
+    const bid = addOposicionesBoard(selectedConvId, newBoardName.trim());
+    setSelectedBoardId(bid);
+    setNewBoardName('');
+  };
+
+  const handleDeleteBoard = (bid) => {
+    deleteOposicionesBoard(selectedConvId, bid);
+    if (selectedBoardId === bid) setSelectedBoardId('');
+  };
+
+  const handleRenameBoard = (bid) => {
+    if (!renameBoardName.trim()) return;
+    renameOposicionesBoard(selectedConvId, bid, renameBoardName.trim());
+    setRenamingBoard(null);
+    setRenameBoardName('');
+  };
+
   const openNew = () => { setEditing(null); setForm({ type: 'text', title: '', content: '', linkedTo: '' }); onOpen(); };
   const openEdit = (item) => { setEditing(item); setForm({ type: item.type, title: item.title, content: item.content, linkedTo: item.linkedTo || '' }); onOpen(); };
   const save = () => {
-    if (editing) updateOposicionesPizarraItem(editing.id, form);
-    else addOposicionesPizarraItem({ ...form, convocatoriaId: selectedConvId || '', position: { x: 50 + Math.random() * 200, y: 50 + Math.random() * 200 } });
+    if (!selectedBoardId) return;
+    if (editing) updateOposicionesPizarraItem(selectedConvId, selectedBoardId, editing.id, form);
+    else addOposicionesPizarraItem(selectedConvId, selectedBoardId, { ...form, position: { x: 50 + Math.random() * 200, y: 50 + Math.random() * 200 } });
     onClose();
   };
 
@@ -811,7 +858,7 @@ function PizarraManager({ selectedConvId }) {
 
   const handleCardMouseDown = (e, itemId) => {
     e.preventDefault();
-    const item = filteredPizarra.find(i => i.id === itemId);
+    const item = items.find((i) => i.id === itemId);
     if (!item) return;
     const rect = e.currentTarget.parentElement.getBoundingClientRect();
     setDragging(itemId);
@@ -823,10 +870,36 @@ function PizarraManager({ selectedConvId }) {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.max(0, e.clientX - rect.left - dragOffset.x);
     const y = Math.max(0, e.clientY - rect.top - dragOffset.y);
-    updateOposicionesPizarraItem(dragging, { position: { x, y } });
+    updateOposicionesPizarraItem(selectedConvId, selectedBoardId, dragging, { position: { x, y } });
   };
 
   const handleBoardMouseUp = () => setDragging(null);
+
+  const handleLimpiarPizarra = () => {
+    if (!selectedBoardId) return;
+    items.forEach((item) => {
+      deleteOposicionesPizarraItem(selectedConvId, selectedBoardId, item.id);
+    });
+  };
+
+  const handleActualizarDesdeTemarios = () => {
+    if (!selectedBoardId || !selectedConvId) return;
+    const filteredTemarios = temarios.filter((t) => t.convocatoriaId === selectedConvId);
+    filteredTemarios.forEach((temario) => {
+      (temario.topics || []).forEach((topic) => {
+        const exists = items.some((i) => i.title === topic.name && i.type === 'text');
+        if (!exists) {
+          addOposicionesPizarraItem(selectedConvId, selectedBoardId, {
+            type: 'text',
+            title: topic.name,
+            content: `Temario: ${temario.name}\n${topic.completed ? '✓ Completado' : 'Pendiente'}`,
+            linkedTo: temario.name,
+            position: { x: 50 + Math.random() * 400, y: 50 + Math.random() * 400 },
+          });
+        }
+      });
+    });
+  };
 
   const renderContent = (item) => {
     if (item.type === 'youtube') {
@@ -861,17 +934,40 @@ function PizarraManager({ selectedConvId }) {
     return <Badge colorScheme={colors[type] || 'gray'}>{labels[type] || type}</Badge>;
   };
 
+  const renderSVGLinks = () => {
+    if (!currentBoard) return null;
+    const linked = items.filter((i) => i.linkedTo);
+    if (linked.length === 0) return null;
+    return (
+      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
+        {linked.map((item) => {
+          const target = items.find((i) => i.title === item.linkedTo && i.id !== item.id);
+          if (!target) return null;
+          const x1 = (item.position?.x || 0) + 120;
+          const y1 = (item.position?.y || 0) + 20;
+          const x2 = (target.position?.x || 0) + 120;
+          const y2 = (target.position?.y || 0) + 20;
+          const mx = (x1 + x2) / 2;
+          const my = (y1 + y2) / 2 - 30;
+          return (
+            <path key={`${item.id}-${target.id}`} d={`M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`} stroke="#3182CE" strokeWidth="2" fill="none" strokeDasharray="5,5" opacity="0.6" />
+          );
+        })}
+      </svg>
+    );
+  };
+
   const handleImport = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !selectedBoardId) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target.result);
-        const items = Array.isArray(data) ? data : [data];
-        items.forEach((item) => {
+        const importItems = Array.isArray(data) ? data : [data];
+        importItems.forEach((item) => {
           const { id, createdAt, ...rest } = item;
-          addOposicionesPizarraItem({ ...rest, convocatoriaId: selectedConvId || '', position: rest.position || { x: 50 + Math.random() * 200, y: 50 + Math.random() * 200 } });
+          addOposicionesPizarraItem(selectedConvId, selectedBoardId, { ...rest, position: rest.position || { x: 50 + Math.random() * 200, y: 50 + Math.random() * 200 } });
         });
       } catch (err) { console.error('Error importing pizarra:', err); }
     };
@@ -881,36 +977,81 @@ function PizarraManager({ selectedConvId }) {
 
   return (
     <Box>
-      <Flex justify="space-between" mb={4}>
+      <Flex justify="space-between" mb={4} align="center" wrap="wrap" gap={2}>
         <Text fontWeight="bold">Pizarra de Oposiciones</Text>
         <HStack>
-          <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportSectionData(filteredPizarra, 'pizarra.json')}>Exportar</Button>
+          <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportSectionData(items, 'pizarra.json')}>Exportar</Button>
           <Button leftIcon={<FiUpload />} size="sm" variant="outline" onClick={() => importRef.current?.click()}>Importar</Button>
           <input type="file" ref={importRef} accept=".json" style={{ display: 'none' }} onChange={handleImport} />
-          <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Elemento</Button>
         </HStack>
       </Flex>
-      <Box position="relative" w="100%" minH="500px" bg={boardBg} borderRadius="xl" border="1px solid" borderColor={borderColor} overflow="auto"
-        onMouseMove={handleBoardMouseMove} onMouseUp={handleBoardMouseUp} onMouseLeave={handleBoardMouseUp}>
-        {filteredPizarra.length === 0 && <Text color="gray.500" textAlign="center" py={4} position="absolute" w="100%" top="50%" transform="translateY(-50%)">No hay elementos en la pizarra</Text>}
-        {filteredPizarra.map((item) => (
-          <Box key={item.id} position="absolute" left={`${item.position?.x || 0}px`} top={`${item.position?.y || 0}px`}
-            w="240px" p={3} bg={bg} borderRadius="lg" boxShadow="md" border="1px solid" borderColor={borderColor}
-            cursor="grab" onMouseDown={(e) => handleCardMouseDown(e, item.id)}>
-            <Flex justify="space-between" align="start" mb={2}>
-              <HStack spacing={1}>{getTypeIcon(item.type)}<Text fontWeight="bold" fontSize="sm">{item.title}</Text></HStack>
-              {getTypeBadge(item.type)}
-            </Flex>
-            <Box mb={2}>{renderContent(item)}</Box>
-            {item.linkedTo && <Badge colorScheme="cyan" mb={2} fontSize="xs"><FiLink size={10} style={{ display: 'inline', marginRight: 4 }} />{item.linkedTo}</Badge>}
-            <HStack spacing={1} justify="flex-end">
-              <Button size="xs" leftIcon={<FiPlus />} variant="outline" colorScheme="green" onClick={(e) => { e.stopPropagation(); openTaskModal(item); }}>Crear tarea</Button>
-              <IconButton icon={<FiEdit3 />} size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(item); }} />
-              <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" onClick={(e) => { e.stopPropagation(); deleteOposicionesPizarraItem(item.id); }} />
+
+      <Flex mb={4} align="center" gap={2} wrap="wrap">
+        {selectedConvId ? (
+          <>
+            <Select size="sm" maxW="250px" value={selectedBoardId} onChange={(e) => setSelectedBoardId(e.target.value)}>
+              <option value="">Seleccionar pizarra...</option>
+              {boardIds.map((bid) => <option key={bid} value={bid}>{convBoards[bid].name}</option>)}
+            </Select>
+            <HStack>
+              <Input size="sm" maxW="200px" placeholder="Nueva pizarra" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateBoard()} />
+              <Button size="sm" leftIcon={<FiPlus />} onClick={handleCreateBoard} isDisabled={!newBoardName.trim()}>Crear</Button>
             </HStack>
-          </Box>
-        ))}
-      </Box>
+            {selectedBoardId && (
+              <>
+                {renamingBoard === selectedBoardId ? (
+                  <HStack>
+                    <Input size="sm" maxW="200px" value={renameBoardName} onChange={(e) => setRenameBoardName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRenameBoard(selectedBoardId)} />
+                    <Button size="sm" onClick={() => handleRenameBoard(selectedBoardId)}>OK</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setRenamingBoard(null)}>Cancelar</Button>
+                  </HStack>
+                ) : (
+                  <Button size="sm" variant="ghost" leftIcon={<FiEdit3 />} onClick={() => { setRenamingBoard(selectedBoardId); setRenameBoardName(currentBoard?.name || ''); }}>Renombrar</Button>
+                )}
+                <Button size="sm" variant="ghost" colorScheme="red" leftIcon={<FiTrash2 />} onClick={() => handleDeleteBoard(selectedBoardId)}>Eliminar pizarra</Button>
+                <Button size="sm" leftIcon={<FiPlus />} onClick={openNew}>Nuevo Elemento</Button>
+                <Button size="sm" variant="outline" colorScheme="orange" onClick={handleLimpiarPizarra}>Limpiar pizarra</Button>
+                <Button size="sm" variant="outline" colorScheme="blue" onClick={handleActualizarDesdeTemarios}>Actualizar desde temarios</Button>
+              </>
+            )}
+          </>
+        ) : (
+          <Text fontSize="sm" color="gray.500">Selecciona una convocatoria para usar la pizarra</Text>
+        )}
+      </Flex>
+
+      {!selectedConvId ? (
+        <Box p={8} bg={boardBg} borderRadius="xl" border="1px solid" borderColor={borderColor} textAlign="center">
+          <Text color="gray.500">Selecciona una convocatoria para ver las pizarras</Text>
+        </Box>
+      ) : !selectedBoardId ? (
+        <Box p={8} bg={boardBg} borderRadius="xl" border="1px solid" borderColor={borderColor} textAlign="center">
+          <Text color="gray.500">{boardIds.length === 0 ? 'Crea una pizarra para empezar' : 'Selecciona una pizarra'}</Text>
+        </Box>
+      ) : (
+        <Box position="relative" w="100%" minH="500px" bg={boardBg} borderRadius="xl" border="1px solid" borderColor={borderColor} overflow="auto"
+          onMouseMove={handleBoardMouseMove} onMouseUp={handleBoardMouseUp} onMouseLeave={handleBoardMouseUp}>
+          {renderSVGLinks()}
+          {items.length === 0 && <Text color="gray.500" textAlign="center" py={4} position="absolute" w="100%" top="50%" transform="translateY(-50%)">No hay elementos en la pizarra</Text>}
+          {items.map((item) => (
+            <Box key={item.id} position="absolute" left={`${item.position?.x || 0}px`} top={`${item.position?.y || 0}px`}
+              w="240px" p={3} bg={bg} borderRadius="lg" boxShadow="md" border="1px solid" borderColor={borderColor}
+              zIndex={dragging === item.id ? 10 : 1} cursor="grab" onMouseDown={(e) => handleCardMouseDown(e, item.id)}>
+              <Flex justify="space-between" align="start" mb={2}>
+                <HStack spacing={1}>{getTypeIcon(item.type)}<Text fontWeight="bold" fontSize="sm">{item.title}</Text></HStack>
+                {getTypeBadge(item.type)}
+              </Flex>
+              <Box mb={2}>{renderContent(item)}</Box>
+              {item.linkedTo && <Badge colorScheme="cyan" mb={2} fontSize="xs"><FiLink size={10} style={{ display: 'inline', marginRight: 4 }} />{item.linkedTo}</Badge>}
+              <HStack spacing={1} justify="flex-end">
+                <Button size="xs" leftIcon={<FiPlus />} variant="outline" colorScheme="green" onClick={(e) => { e.stopPropagation(); openTaskModal(item); }}>Crear tarea</Button>
+                <IconButton icon={<FiEdit3 />} size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(item); }} />
+                <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" onClick={(e) => { e.stopPropagation(); deleteOposicionesPizarraItem(selectedConvId, selectedBoardId, item.id); }} />
+              </HStack>
+            </Box>
+          ))}
+        </Box>
+      )}
 
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
@@ -927,7 +1068,10 @@ function PizarraManager({ selectedConvId }) {
               </Select></FormControl>
               <FormControl><FormLabel>Título</FormLabel><Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} /></FormControl>
               <FormControl><FormLabel>{form.type === 'text' ? 'Contenido' : 'URL'}</FormLabel>{form.type === 'text' ? <Textarea value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} rows={5} /> : <Input value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} placeholder={form.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' : form.type === 'image' ? 'https://example.com/image.jpg' : 'https://example.com'} />}</FormControl>
-              <FormControl><FormLabel>Enlazado a (opcional)</FormLabel><Input value={form.linkedTo} onChange={(e) => setForm((f) => ({ ...f, linkedTo: e.target.value }))} placeholder="Ej. Tema 3, Test 1..." /></FormControl>
+              <FormControl><FormLabel>Enlazado a (opcional)</FormLabel><Select placeholder="Seleccionar elemento..." value={form.linkedTo} onChange={(e) => setForm((f) => ({ ...f, linkedTo: e.target.value }))}>
+                <option value="">Ninguno</option>
+                {items.filter((i) => i.id !== editing?.id).map((i) => <option key={i.id} value={i.title}>{i.title}</option>)}
+              </Select></FormControl>
             </VStack>
           </ModalBody>
           <ModalFooter>
@@ -955,6 +1099,228 @@ function PizarraManager({ selectedConvId }) {
           </ModalFooter>
         </ModalContent>
       </Modal>
+    </Box>
+  );
+}
+
+// ===== KANBAN BOARD (oposiciones) =====
+const KANBAN_COLUMNS = [
+  { key: 'pendiente', label: 'Pendiente', color: 'gray' },
+  { key: 'progreso', label: 'En Progreso', color: 'blue' },
+  { key: 'revision', label: 'En Revisión', color: 'yellow' },
+  { key: 'completado', label: 'Completado', color: 'green' },
+];
+
+function OposicionesKanbanBoard({ selectedConvId }) {
+  const { oposicionesKanbans, addOposicionesKanbanBoard, deleteOposicionesKanbanBoard, renameOposicionesKanbanBoard, temarios } = useStore();
+  const [selectedBoardId, setSelectedBoardId] = useState('');
+  const [newBoardName, setNewBoardName] = useState('');
+  const [renamingBoard, setRenamingBoard] = useState(null);
+  const [renameBoardName, setRenameBoardName] = useState('');
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const colBg = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+
+  const convBoards = useMemo(() => oposicionesKanbans[selectedConvId] || {}, [oposicionesKanbans, selectedConvId]);
+  const boardIds = Object.keys(convBoards);
+
+  React.useEffect(() => {
+    if (boardIds.length > 0 && !boardIds.includes(selectedBoardId)) {
+      setSelectedBoardId(boardIds[0]);
+    } else if (boardIds.length === 0) {
+      setSelectedBoardId('');
+    }
+  }, [boardIds.join(','), selectedBoardId]);
+
+  const currentBoard = selectedBoardId ? convBoards[selectedBoardId] : null;
+  const assignments = currentBoard?.assignments || {};
+
+  const filteredTemarios = useMemo(() =>
+    temarios.filter((t) => !selectedConvId || t.convocatoriaId === selectedConvId),
+    [temarios, selectedConvId]
+  );
+
+  const allTopics = useMemo(() => {
+    const topics = [];
+    filteredTemarios.forEach((temario) => {
+      (temario.topics || []).forEach((topic) => {
+        topics.push({ ...topic, temarioName: temario.name, temarioId: temario.id });
+      });
+    });
+    return topics;
+  }, [filteredTemarios]);
+
+  const handleCreateBoard = () => {
+    if (!newBoardName.trim() || !selectedConvId) return;
+    const bid = addOposicionesKanbanBoard(selectedConvId, newBoardName.trim());
+    setSelectedBoardId(bid);
+    setNewBoardName('');
+  };
+
+  const handleDeleteBoard = (bid) => {
+    deleteOposicionesKanbanBoard(selectedConvId, bid);
+    if (selectedBoardId === bid) setSelectedBoardId('');
+  };
+
+  const handleRenameBoard = (bid) => {
+    if (!renameBoardName.trim()) return;
+    renameOposicionesKanbanBoard(selectedConvId, bid, renameBoardName.trim());
+    setRenamingBoard(null);
+    setRenameBoardName('');
+  };
+
+  const handleSyncFromTemarios = () => {
+    if (!selectedBoardId || !selectedConvId) return;
+    const updated = { ...(assignments) };
+    allTopics.forEach((topic) => {
+      if (!updated[topic.id]) {
+        updated[topic.id] = 'pendiente';
+      }
+    });
+    renameOposicionesKanbanBoard(selectedConvId, selectedBoardId, currentBoard.name);
+    useStore.setState((s) => ({
+      oposicionesKanbans: {
+        ...s.oposicionesKanbans,
+        [selectedConvId]: {
+          ...(s.oposicionesKanbans[selectedConvId] || {}),
+          [selectedBoardId]: { ...currentBoard, assignments: updated },
+        },
+      },
+    }));
+  };
+
+  const handleClearBoard = () => {
+    if (!selectedBoardId || !selectedConvId) return;
+    useStore.setState((s) => ({
+      oposicionesKanbans: {
+        ...s.oposicionesKanbans,
+        [selectedConvId]: {
+          ...(s.oposicionesKanbans[selectedConvId] || {}),
+          [selectedBoardId]: { ...currentBoard, assignments: {} },
+        },
+      },
+    }));
+  };
+
+  const moveCard = (topicId, newStatus) => {
+    if (!selectedBoardId || !selectedConvId) return;
+    const updated = { ...assignments, [topicId]: newStatus };
+    useStore.setState((s) => ({
+      oposicionesKanbans: {
+        ...s.oposicionesKanbans,
+        [selectedConvId]: {
+          ...(s.oposicionesKanbans[selectedConvId] || {}),
+          [selectedBoardId]: { ...currentBoard, assignments: updated },
+        },
+      },
+    }));
+  };
+
+  const handleDragStart = (e, topicId) => {
+    e.dataTransfer.setData('text/plain', topicId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetStatus) => {
+    e.preventDefault();
+    const topicId = e.dataTransfer.getData('text/plain');
+    if (topicId) moveCard(topicId, targetStatus);
+  };
+
+  const getColumnTopics = (status) => {
+    return allTopics.filter((t) => (assignments[t.id] || 'pendiente') === status);
+  };
+
+  const completedCount = allTopics.filter((t) => assignments[t.id] === 'completado').length;
+  const totalCount = allTopics.length;
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  if (!selectedConvId) {
+    return (
+      <Box p={8} bg={colBg} borderRadius="xl" border="1px solid" borderColor={borderColor} textAlign="center">
+        <Text color="gray.500">Selecciona una convocatoria para ver el tablero kanban</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Flex mb={4} align="center" gap={2} wrap="wrap">
+        <Select size="sm" maxW="250px" value={selectedBoardId} onChange={(e) => setSelectedBoardId(e.target.value)}>
+          <option value="">Seleccionar tablero...</option>
+          {boardIds.map((bid) => <option key={bid} value={bid}>{convBoards[bid].name}</option>)}
+        </Select>
+        <HStack>
+          <Input size="sm" maxW="200px" placeholder="Nuevo tablero" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateBoard()} />
+          <Button size="sm" leftIcon={<FiPlus />} onClick={handleCreateBoard} isDisabled={!newBoardName.trim()}>Crear</Button>
+        </HStack>
+        {selectedBoardId && (
+          <>
+            {renamingBoard === selectedBoardId ? (
+              <HStack>
+                <Input size="sm" maxW="200px" value={renameBoardName} onChange={(e) => setRenameBoardName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRenameBoard(selectedBoardId)} />
+                <Button size="sm" onClick={() => handleRenameBoard(selectedBoardId)}>OK</Button>
+                <Button size="sm" variant="ghost" onClick={() => setRenamingBoard(null)}>Cancelar</Button>
+              </HStack>
+            ) : (
+              <Button size="sm" variant="ghost" leftIcon={<FiEdit3 />} onClick={() => { setRenamingBoard(selectedBoardId); setRenameBoardName(currentBoard?.name || ''); }}>Renombrar</Button>
+            )}
+            <Button size="sm" variant="ghost" colorScheme="red" leftIcon={<FiTrash2 />} onClick={() => handleDeleteBoard(selectedBoardId)}>Eliminar</Button>
+            <Button size="sm" variant="outline" colorScheme="blue" onClick={handleSyncFromTemarios}>Sincronizar desde temarios</Button>
+            <Button size="sm" variant="outline" colorScheme="orange" onClick={handleClearBoard}>Limpiar tablero</Button>
+          </>
+        )}
+      </Flex>
+
+      {selectedBoardId && (
+        <Box mb={4}>
+          <Flex justify="space-between" mb={1}>
+            <Text fontSize="sm" color="gray.500">Progreso: {completedCount}/{totalCount} temas completados</Text>
+            <Text fontSize="sm" fontWeight="bold">{progressPct}%</Text>
+          </Flex>
+          <Progress value={progressPct} colorScheme="green" size="sm" borderRadius="full" />
+        </Box>
+      )}
+
+      {!selectedBoardId ? (
+        <Box p={8} bg={colBg} borderRadius="xl" border="1px solid" borderColor={borderColor} textAlign="center">
+          <Text color="gray.500">{boardIds.length === 0 ? 'Crea un tablero para empezar' : 'Selecciona un tablero'}</Text>
+        </Box>
+      ) : (
+        <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={4}>
+          {KANBAN_COLUMNS.map((col) => {
+            const colTopics = getColumnTopics(col.key);
+            return (
+              <Box key={col.key} p={3} bg={colBg} borderRadius="xl" border="1px solid" borderColor={borderColor} minH="300px"
+                onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, col.key)}>
+                <Flex justify="space-between" align="center" mb={3}>
+                  <HStack>
+                    <Badge colorScheme={col.color} fontSize="sm">{col.label}</Badge>
+                    <Text fontSize="xs" color="gray.400">{colTopics.length}</Text>
+                  </HStack>
+                </Flex>
+                <VStack spacing={2} align="stretch">
+                  {colTopics.map((topic) => (
+                    <Box key={topic.id} p={3} bg={cardBg} borderRadius="md" boxShadow="sm" border="1px solid" borderColor={borderColor}
+                      cursor="grab" draggable onDragStart={(e) => handleDragStart(e, topic.id)}>
+                      <Text fontWeight="bold" fontSize="sm" mb={1}>{topic.name}</Text>
+                      <Text fontSize="xs" color="gray.400" mb={1}>{topic.temarioName}</Text>
+                      {topic.completed && <Badge size="xs" colorScheme="green">Estudiado</Badge>}
+                    </Box>
+                  ))}
+                  {colTopics.length === 0 && <Text fontSize="xs" color="gray.400" textAlign="center" py={2}>Sin temas</Text>}
+                </VStack>
+              </Box>
+            );
+          })}
+        </Grid>
+      )}
     </Box>
   );
 }
@@ -1128,6 +1494,7 @@ export default function Oposiciones() {
           <Tab><FiEdit style={{ marginRight: 8 }} />Supuestos Prácticos</Tab>
           <Tab><FiAward style={{ marginRight: 8 }} />Simulacros</Tab>
           <Tab><FiGrid style={{ marginRight: 8 }} />Pizarra</Tab>
+          <Tab><FiGrid style={{ marginRight: 8 }} />Tablero</Tab>
           <Tab><FiBarChart2 style={{ marginRight: 8 }} />Estadísticas</Tab>
         </TabList>
         <TabPanels>
@@ -1142,6 +1509,7 @@ export default function Oposiciones() {
           <TabPanel px={0}><SupuestosPracticosManager selectedConvId={selectedConvId} /></TabPanel>
           <TabPanel px={0}><SimulacrosManager selectedConvId={selectedConvId} /></TabPanel>
           <TabPanel px={0}><PizarraManager selectedConvId={selectedConvId} /></TabPanel>
+          <TabPanel px={0}><OposicionesKanbanBoard selectedConvId={selectedConvId} /></TabPanel>
           <TabPanel px={0}><EstadisticasOposiciones selectedConvId={selectedConvId} /></TabPanel>
         </TabPanels>
       </Tabs>
