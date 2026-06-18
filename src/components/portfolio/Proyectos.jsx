@@ -18,6 +18,7 @@ function ProjectManager() {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const taskRowBg = useColorModeValue('gray.50', 'gray.700');
+  const taskBorder = useColorModeValue('gray.300', 'gray.600');
 
   const openNew = () => { setEditing(null); setForm({ name: '', description: '', tasks: [] }); onOpen(); };
   const openEdit = (p) => { setEditing(p); setForm({ ...p }); onOpen(); };
