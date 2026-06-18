@@ -1,10 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Progress, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel, Tooltip, Tag, Wrap, WrapItem, Switch, NumberInput, NumberInputField, Divider } from '@chakra-ui/react';
-import { FiPlus, FiTrash2, FiEdit3, FiPlay, FiPause, FiSquare, FiCheck, FiClock, FiBookOpen, FiTarget, FiAward, FiFileText, FiBook, FiCheckCircle, FiBarChart2, FiEdit, FiLink, FiExternalLink, FiImage, FiVideo, FiGrid } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit3, FiPlay, FiPause, FiSquare, FiCheck, FiClock, FiBookOpen, FiTarget, FiAward, FiFileText, FiBook, FiCheckCircle, FiBarChart2, FiEdit, FiLink, FiExternalLink, FiImage, FiVideo, FiGrid, FiDownload, FiUpload } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import useStore from '../../store/useStore';
 import { formatDate } from '../../utils/helpers';
 import { useRechartStyles } from '../../utils/rechartStyles';
+
+const exportSectionData = (data, filename) => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+};
 
 // ===== CRONOMETRO =====
 function Cronometro({ onRegister }) {
@@ -176,6 +184,7 @@ function TemarioManager({ selectedConvId }) {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
+  const importRef = React.useRef(null);
 
   const filteredTemarios = useMemo(() =>
     temarios.filter((t) => !selectedConvId || t.convocatoriaId === selectedConvId),
@@ -214,11 +223,34 @@ function TemarioManager({ selectedConvId }) {
     return `${(s / 3600).toFixed(1)}h`;
   };
 
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const items = Array.isArray(data) ? data : [data];
+        items.forEach((item) => {
+          const { id, createdAt, ...rest } = item;
+          addTemario({ ...rest, convocatoriaId: selectedConvId || '' });
+        });
+      } catch (err) { console.error('Error importing temarios:', err); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <Box>
       <Flex justify="space-between" mb={4}>
         <Text fontWeight="bold">Temarios</Text>
-        <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Temario</Button>
+        <HStack>
+          <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportSectionData(filteredTemarios, 'temarios.json')}>Exportar</Button>
+          <Button leftIcon={<FiUpload />} size="sm" variant="outline" onClick={() => importRef.current?.click()}>Importar</Button>
+          <input type="file" ref={importRef} accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+          <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Temario</Button>
+        </HStack>
       </Flex>
       <VStack spacing={4} align="stretch">
         {filteredTemarios.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay temarios creados</Text>}
@@ -310,6 +342,7 @@ function TestManager({ selectedConvId }) {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
+  const importRef = React.useRef(null);
 
   const filteredTests = useMemo(() =>
     tests.filter((t) => !selectedConvId || t.convocatoriaId === selectedConvId),
@@ -333,6 +366,24 @@ function TestManager({ selectedConvId }) {
     addTestResult(result);
     addXP(Math.round(result.percentage / 10));
     setShowResults(true);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const items = Array.isArray(data) ? data : [data];
+        items.forEach((item) => {
+          const { id, createdAt, ...rest } = item;
+          addTest({ ...rest, convocatoriaId: selectedConvId || '' });
+        });
+      } catch (err) { console.error('Error importing tests:', err); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -374,7 +425,12 @@ function TestManager({ selectedConvId }) {
         <>
           <Flex justify="space-between" mb={4}>
             <Text fontWeight="bold">Tests</Text>
-            <Button leftIcon={<FiPlus />} size="sm" onClick={() => { setForm({ name: '', questions: [] }); onOpen(); }}>Nuevo Test</Button>
+            <HStack>
+              <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportSectionData(filteredTests, 'tests.json')}>Exportar</Button>
+              <Button leftIcon={<FiUpload />} size="sm" variant="outline" onClick={() => importRef.current?.click()}>Importar</Button>
+              <input type="file" ref={importRef} accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+              <Button leftIcon={<FiPlus />} size="sm" onClick={() => { setForm({ name: '', questions: [] }); onOpen(); }}>Nuevo Test</Button>
+            </HStack>
           </Flex>
           {filteredTests.length === 0 ? <Text color="gray.500" textAlign="center" py={4}>No hay tests creados</Text> : (
             <VStack spacing={3} align="stretch">
@@ -437,6 +493,7 @@ function SupuestosPracticosManager({ selectedConvId }) {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const cardBg = useColorModeValue('gray.50', 'gray.700');
+  const importRef = React.useRef(null);
 
   const filteredSupuestos = useMemo(() =>
     supuestosPracticos.filter((sp) => !selectedConvId || sp.convocatoriaId === selectedConvId),
@@ -460,11 +517,34 @@ function SupuestosPracticosManager({ selectedConvId }) {
     onClose();
   };
 
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const items = Array.isArray(data) ? data : [data];
+        items.forEach((item) => {
+          const { id, createdAt, ...rest } = item;
+          addSupuestoPractico({ ...rest, convocatoriaId: selectedConvId || '' });
+        });
+      } catch (err) { console.error('Error importing supuestos:', err); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <Box>
       <Flex justify="space-between" mb={4}>
         <Text fontWeight="bold">Supuestos Prácticos</Text>
-        <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Supuesto</Button>
+        <HStack>
+          <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportSectionData(filteredSupuestos, 'supuestos_practicos.json')}>Exportar</Button>
+          <Button leftIcon={<FiUpload />} size="sm" variant="outline" onClick={() => importRef.current?.click()}>Importar</Button>
+          <input type="file" ref={importRef} accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+          <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Supuesto</Button>
+        </HStack>
       </Flex>
 
       <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={6}>
@@ -545,6 +625,7 @@ function SimulacrosManager({ selectedConvId }) {
   const [form, setForm] = useState({ titulo: '', fecha: '', puntuacion: '', tiempoLimite: '', tiempoEmpleado: '', aprobado: false, numPreguntas: '', aciertos: '', errores: '', blancos: '', notas: '' });
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const importRef = React.useRef(null);
 
   const filteredSimulacros = useMemo(() =>
     simulacros.filter((s) => !selectedConvId || s.convocatoriaId === selectedConvId),
@@ -570,11 +651,34 @@ function SimulacrosManager({ selectedConvId }) {
     onClose();
   };
 
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const items = Array.isArray(data) ? data : [data];
+        items.forEach((item) => {
+          const { id, createdAt, ...rest } = item;
+          addSimulacro({ ...rest, convocatoriaId: selectedConvId || '' });
+        });
+      } catch (err) { console.error('Error importing simulacros:', err); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <Box>
       <Flex justify="space-between" mb={4}>
         <Text fontWeight="bold">Simulacros</Text>
-        <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Simulacro</Button>
+        <HStack>
+          <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportSectionData(filteredSimulacros, 'simulacros.json')}>Exportar</Button>
+          <Button leftIcon={<FiUpload />} size="sm" variant="outline" onClick={() => importRef.current?.click()}>Importar</Button>
+          <input type="file" ref={importRef} accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+          <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Simulacro</Button>
+        </HStack>
       </Flex>
 
       <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4} mb={6}>
@@ -665,12 +769,16 @@ function PizarraManager({ selectedConvId }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isTaskOpen, onOpen: onTaskOpen, onClose: onTaskClose } = useDisclosure();
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ type: 'text', title: '', content: '' });
+  const [form, setForm] = useState({ type: 'text', title: '', content: '', linkedTo: '' });
   const [taskForm, setTaskForm] = useState({ title: '', description: '', date: '' });
   const [taskItem, setTaskItem] = useState(null);
+  const [dragging, setDragging] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const boardBg = useColorModeValue('gray.50', 'gray.900');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
+  const importRef = React.useRef(null);
 
   const filteredPizarra = useMemo(() =>
     oposicionesPizarra.filter((p) => !selectedConvId || p.convocatoriaId === selectedConvId),
@@ -682,11 +790,11 @@ function PizarraManager({ selectedConvId }) {
     return match ? match[1] : null;
   };
 
-  const openNew = () => { setEditing(null); setForm({ type: 'text', title: '', content: '' }); onOpen(); };
-  const openEdit = (item) => { setEditing(item); setForm({ type: item.type, title: item.title, content: item.content }); onOpen(); };
+  const openNew = () => { setEditing(null); setForm({ type: 'text', title: '', content: '', linkedTo: '' }); onOpen(); };
+  const openEdit = (item) => { setEditing(item); setForm({ type: item.type, title: item.title, content: item.content, linkedTo: item.linkedTo || '' }); onOpen(); };
   const save = () => {
     if (editing) updateOposicionesPizarraItem(editing.id, form);
-    else addOposicionesPizarraItem({ ...form, convocatoriaId: selectedConvId || '' });
+    else addOposicionesPizarraItem({ ...form, convocatoriaId: selectedConvId || '', position: { x: 50 + Math.random() * 200, y: 50 + Math.random() * 200 } });
     onClose();
   };
 
@@ -701,17 +809,36 @@ function PizarraManager({ selectedConvId }) {
     onTaskClose();
   };
 
+  const handleCardMouseDown = (e, itemId) => {
+    e.preventDefault();
+    const item = filteredPizarra.find(i => i.id === itemId);
+    if (!item) return;
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    setDragging(itemId);
+    setDragOffset({ x: e.clientX - rect.left - (item.position?.x || 0), y: e.clientY - rect.top - (item.position?.y || 0) });
+  };
+
+  const handleBoardMouseMove = (e) => {
+    if (!dragging) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, e.clientX - rect.left - dragOffset.x);
+    const y = Math.max(0, e.clientY - rect.top - dragOffset.y);
+    updateOposicionesPizarraItem(dragging, { position: { x, y } });
+  };
+
+  const handleBoardMouseUp = () => setDragging(null);
+
   const renderContent = (item) => {
     if (item.type === 'youtube') {
       const videoId = extractYouTubeId(item.content);
       return videoId ? (
-        <Box borderRadius="md" overflow="hidden" w="100%" maxW="480px">
-          <Box as="iframe" src={`https://www.youtube.com/embed/${videoId}`} w="100%" h="270px" frameBorder="0" allowFullScreen title={item.title} />
+        <Box borderRadius="md" overflow="hidden" w="100%" maxW="220px">
+          <Box as="iframe" src={`https://www.youtube.com/embed/${videoId}`} w="100%" h="125px" frameBorder="0" allowFullScreen title={item.title} />
         </Box>
       ) : <Text fontSize="sm" color="red.400">URL de YouTube no válida</Text>;
     }
     if (item.type === 'image') {
-      return <Box as="img" src={item.content} alt={item.title} maxW="100%" maxH="300px" borderRadius="md" objectFit="contain" fallback={<Text fontSize="sm" color="red.400">No se pudo cargar la imagen</Text>} />;
+      return <Box as="img" src={item.content} alt={item.title} maxW="100%" maxH="160px" borderRadius="md" objectFit="contain" fallback={<Text fontSize="sm" color="red.400">No se pudo cargar la imagen</Text>} />;
     }
     if (item.type === 'link') {
       return <HStack><FiExternalLink /><Text as="a" href={item.content} target="_blank" rel="noopener noreferrer" color="blue.400" fontSize="sm" wordBreak="break-all">{item.content}</Text></HStack>;
@@ -734,33 +861,56 @@ function PizarraManager({ selectedConvId }) {
     return <Badge colorScheme={colors[type] || 'gray'}>{labels[type] || type}</Badge>;
   };
 
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const items = Array.isArray(data) ? data : [data];
+        items.forEach((item) => {
+          const { id, createdAt, ...rest } = item;
+          addOposicionesPizarraItem({ ...rest, convocatoriaId: selectedConvId || '', position: rest.position || { x: 50 + Math.random() * 200, y: 50 + Math.random() * 200 } });
+        });
+      } catch (err) { console.error('Error importing pizarra:', err); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <Box>
       <Flex justify="space-between" mb={4}>
         <Text fontWeight="bold">Pizarra de Oposiciones</Text>
-        <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Elemento</Button>
+        <HStack>
+          <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportSectionData(filteredPizarra, 'pizarra.json')}>Exportar</Button>
+          <Button leftIcon={<FiUpload />} size="sm" variant="outline" onClick={() => importRef.current?.click()}>Importar</Button>
+          <input type="file" ref={importRef} accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+          <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Elemento</Button>
+        </HStack>
       </Flex>
-      <VStack spacing={4} align="stretch">
-        {filteredPizarra.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay elementos en la pizarra</Text>}
+      <Box position="relative" w="100%" minH="500px" bg={boardBg} borderRadius="xl" border="1px solid" borderColor={borderColor} overflow="auto"
+        onMouseMove={handleBoardMouseMove} onMouseUp={handleBoardMouseUp} onMouseLeave={handleBoardMouseUp}>
+        {filteredPizarra.length === 0 && <Text color="gray.500" textAlign="center" py={4} position="absolute" w="100%" top="50%" transform="translateY(-50%)">No hay elementos en la pizarra</Text>}
         {filteredPizarra.map((item) => (
-          <Box key={item.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-            <Flex justify="space-between" align="start">
-              <Box flex={1}>
-                <HStack mb={2} wrap="wrap">
-                  <HStack spacing={1}>{getTypeIcon(item.type)}<Text fontWeight="bold">{item.title}</Text></HStack>
-                  {getTypeBadge(item.type)}
-                </HStack>
-                <Box>{renderContent(item)}</Box>
-              </Box>
-              <HStack>
-                <Button size="xs" leftIcon={<FiPlus />} variant="outline" colorScheme="green" onClick={() => openTaskModal(item)}>Crear tarea</Button>
-                <IconButton icon={<FiEdit3 />} size="xs" onClick={() => openEdit(item)} />
-                <IconButton icon={<FiTrash2 />} size="xs" colorScheme="red" onClick={() => deleteOposicionesPizarraItem(item.id)} />
-              </HStack>
+          <Box key={item.id} position="absolute" left={`${item.position?.x || 0}px`} top={`${item.position?.y || 0}px`}
+            w="240px" p={3} bg={bg} borderRadius="lg" boxShadow="md" border="1px solid" borderColor={borderColor}
+            cursor="grab" onMouseDown={(e) => handleCardMouseDown(e, item.id)}>
+            <Flex justify="space-between" align="start" mb={2}>
+              <HStack spacing={1}>{getTypeIcon(item.type)}<Text fontWeight="bold" fontSize="sm">{item.title}</Text></HStack>
+              {getTypeBadge(item.type)}
             </Flex>
+            <Box mb={2}>{renderContent(item)}</Box>
+            {item.linkedTo && <Badge colorScheme="cyan" mb={2} fontSize="xs"><FiLink size={10} style={{ display: 'inline', marginRight: 4 }} />{item.linkedTo}</Badge>}
+            <HStack spacing={1} justify="flex-end">
+              <Button size="xs" leftIcon={<FiPlus />} variant="outline" colorScheme="green" onClick={(e) => { e.stopPropagation(); openTaskModal(item); }}>Crear tarea</Button>
+              <IconButton icon={<FiEdit3 />} size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(item); }} />
+              <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" onClick={(e) => { e.stopPropagation(); deleteOposicionesPizarraItem(item.id); }} />
+            </HStack>
           </Box>
         ))}
-      </VStack>
+      </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
@@ -777,6 +927,7 @@ function PizarraManager({ selectedConvId }) {
               </Select></FormControl>
               <FormControl><FormLabel>Título</FormLabel><Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} /></FormControl>
               <FormControl><FormLabel>{form.type === 'text' ? 'Contenido' : 'URL'}</FormLabel>{form.type === 'text' ? <Textarea value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} rows={5} /> : <Input value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} placeholder={form.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' : form.type === 'image' ? 'https://example.com/image.jpg' : 'https://example.com'} />}</FormControl>
+              <FormControl><FormLabel>Enlazado a (opcional)</FormLabel><Input value={form.linkedTo} onChange={(e) => setForm((f) => ({ ...f, linkedTo: e.target.value }))} placeholder="Ej. Tema 3, Test 1..." /></FormControl>
             </VStack>
           </ModalBody>
           <ModalFooter>

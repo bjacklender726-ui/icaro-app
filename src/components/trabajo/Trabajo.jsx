@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react';
-import { FiPlus, FiTrash2, FiEdit3, FiBriefcase, FiBarChart2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit3, FiBriefcase, FiBarChart2, FiDownload, FiUpload } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import useStore from '../../store/useStore';
 import { formatDate, JOB_STATUSES } from '../../utils/helpers';
@@ -120,7 +120,7 @@ function OfertaForm({ isOpen, onClose, editing }) {
 }
 
 export default function Trabajo() {
-  const { jobOffers, deleteJobOffer } = useStore();
+  const { jobOffers, deleteJobOffer, addJobOffer } = useStore();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editing, setEditing] = useState(null);
   const [filterPortal, setFilterPortal] = useState('');
@@ -129,6 +129,34 @@ export default function Trabajo() {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [selectedMetricDay, setSelectedMetricDay] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const importRef = React.useRef(null);
+
+  const exportData = (data, filename) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const items = JSON.parse(ev.target.result);
+        if (Array.isArray(items)) {
+          items.forEach((item) => {
+            const { id, createdAt, ...rest } = item;
+            addJobOffer(rest);
+          });
+        }
+      } catch (err) { console.error('Error al importar ofertas:', err); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const { textColor, gridColor, tooltipBg, tooltipBorder, tooltipColor } = useRechartStyles();
@@ -231,7 +259,12 @@ export default function Trabajo() {
               <Input size="sm" w="140px" type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} placeholder="Desde" />
               <Input size="sm" w="140px" type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} placeholder="Hasta" />
             </HStack>
-            <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nueva Oferta</Button>
+            <HStack spacing={2}>
+              <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportData(filteredOffers, 'ofertas_trabajo.json')}>Exportar</Button>
+              <input type="file" ref={importRef} accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+              <IconButton icon={<FiUpload />} size="sm" variant="outline" onClick={() => importRef.current?.click()} title="Importar ofertas" />
+              <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nueva Oferta</Button>
+            </HStack>
           </Flex>
 
           <Text fontSize="sm" color="gray.500" mb={3}>{filteredOffers.length} ofertas encontradas</Text>

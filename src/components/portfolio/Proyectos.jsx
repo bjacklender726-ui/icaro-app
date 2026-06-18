@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import useStore from '../../store/useStore';
 import { formatDate } from '../../utils/helpers';
 import { useRechartStyles } from '../../utils/rechartStyles';
-import { format, subDays, subWeeks, subMonths, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, startOfWeek, startOfMonth } from 'date-fns';
+import { format, subDays, subWeeks, subMonths, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, startOfWeek, startOfMonth, addDays } from 'date-fns';
 
 const PROJECT_SUGGESTIONS = [
   { id: 'web-react', name: 'Web App (React)', description: 'Aplicación web con React', technologies: ['JavaScript', 'React', 'CSS', 'Node.js'], defaultTasks: ['Configurar proyecto (Vite/Create React App)', 'Diseñar interfaz de usuario', 'Crear componentes base', 'Implementar routing', 'Crear componentes de negocio', 'Integrar API/Backend', 'Tests unitarios', 'Testing de integración', 'Optimización y rendimiento', 'Deploy a producción'] },
@@ -47,14 +47,17 @@ function ProjectManager() {
   const store = useStore();
   const { projects, addProject, updateProject, deleteProject, addProjectLog, addAgendaTask, addNotification } = store;
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isTaskModalOpen, onOpen: onTaskModalOpen, onClose: onTaskModalClose } = useDisclosure();
   const [editing, setEditing] = useState(null);
   const [expandedProject, setExpandedProject] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', tasks: [], technologies: [], onlineLink: '' });
+  const [form, setForm] = useState({ name: '', description: '', tasks: [], technologies: [], onlineLink: '', estimatedHours: 0 });
   const [creationMode, setCreationMode] = useState('suggested');
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const [customTechs, setCustomTechs] = useState([]);
   const [generateSubtasks, setGenerateSubtasks] = useState(false);
   const [taskForm, setTaskForm] = useState({ name: '', description: '', estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
+  const [editingTask, setEditingTask] = useState(null);
+  const [taskEditForm, setTaskEditForm] = useState({ name: '', description: '', estimatedHours: 1, startDate: '', endDate: '', completed: false });
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const taskRowBg = useColorModeValue('gray.50', 'gray.700');
@@ -65,7 +68,7 @@ function ProjectManager() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', description: '', tasks: [], technologies: [], onlineLink: '' });
+    setForm({ name: '', description: '', tasks: [], technologies: [], onlineLink: '', estimatedHours: 0 });
     setCreationMode('suggested');
     setSelectedSuggestion(null);
     setCustomTechs([]);
@@ -121,20 +124,26 @@ function ProjectManager() {
 
   const selectSuggestion = (suggestion) => {
     setSelectedSuggestion(suggestion);
+    const tasks = suggestion.defaultTasks.map((name, i) => ({ id: `gen-${i}`, name, description: '', completed: false, estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' }));
+    const totalEst = tasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
     setForm((f) => ({
       ...f,
       name: suggestion.name,
       description: suggestion.description,
       technologies: suggestion.technologies,
-      tasks: suggestion.defaultTasks.map((name, i) => ({ id: `gen-${i}`, name, description: '', completed: false })),
+      tasks,
+      estimatedHours: totalEst,
     }));
   };
 
   const regenerateSuggestionTasks = () => {
     if (!selectedSuggestion) return;
+    const tasks = selectedSuggestion.defaultTasks.map((name, i) => ({ id: `gen-${i}`, name, description: '', completed: false, estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' }));
+    const totalEst = tasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
     setForm((f) => ({
       ...f,
-      tasks: selectedSuggestion.defaultTasks.map((name, i) => ({ id: `gen-${i}`, name, description: '', completed: false })),
+      tasks,
+      estimatedHours: totalEst,
     }));
   };
 
@@ -166,6 +175,55 @@ function ProjectManager() {
       ...f,
       technologies: f.technologies.filter((t) => t !== tech),
     }));
+  };
+
+  const openEditTask = (project, task) => {
+    setEditingTask({ projectId: project.id, taskId: task.id });
+    setTaskEditForm({
+      name: task.name || '',
+      description: task.description || '',
+      estimatedHours: task.estimatedHours || 1,
+      startDate: task.startDate || '',
+      endDate: task.endDate || '',
+      completed: task.completed || false,
+    });
+    onTaskModalOpen();
+  };
+
+  const saveTaskEdit = () => {
+    if (!editingTask) return;
+    const { projectId, taskId } = editingTask;
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+    const updatedTasks = (project.tasks || []).map((t) =>
+      t.id === taskId
+        ? {
+            ...t,
+            name: taskEditForm.name,
+            description: taskEditForm.description,
+            estimatedHours: parseFloat(taskEditForm.estimatedHours) || 0,
+            startDate: taskEditForm.startDate,
+            endDate: taskEditForm.endDate,
+            completed: taskEditForm.completed,
+          }
+        : t
+    );
+    updateProject(projectId, { tasks: updatedTasks });
+    onTaskModalClose();
+    setEditingTask(null);
+  };
+
+  const handleTaskEditFieldChange = (field, value) => {
+    setTaskEditForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if ((field === 'startDate' || field === 'estimatedHours') && next.startDate && next.estimatedHours > 0) {
+        const days = Math.ceil(next.estimatedHours / 8);
+        const start = new Date(next.startDate);
+        const end = addDays(start, days);
+        next.endDate = format(end, 'yyyy-MM-dd');
+      }
+      return next;
+    });
   };
 
   return (
@@ -212,6 +270,10 @@ function ProjectManager() {
                       ))}
                     </Wrap>
                   )}
+                  <HStack mb={3} spacing={3}>
+                    <Badge colorScheme="green" fontSize="sm">{hours.toFixed(1)}h registradas</Badge>
+                    {totalEstimated > 0 && <Badge colorScheme="purple" fontSize="sm">{totalEstimated}h estimadas</Badge>}
+                  </HStack>
                   {(p.tasks || []).length === 0 && <Text color="gray.500" fontSize="sm">Sin subtareas</Text>}
                   {(p.tasks || []).map((t) => {
                     const taskH = getTaskHours(p.id, t.id);
@@ -236,12 +298,17 @@ function ProjectManager() {
                             </HStack>
                           </Box>
                         </HStack>
-                        <Tooltip label="Activar en Agenda">
-                          <IconButton icon={<FiClock />} size="xs" variant="ghost" colorScheme="purple" onClick={() => {
-                            addAgendaTask({ title: t.name, description: t.description || `Subtarea de ${p.name}`, date: t.startDate || format(new Date(), 'yyyy-MM-dd'), completed: false, section: 'proyectos', type: 'task' });
-                            addNotification({ title: 'Tarea enviada a Agenda', message: `"${t.name}" agregada a la agenda`, type: 'info', section: 'proyectos' });
-                          }} />
-                        </Tooltip>
+                        <HStack spacing={0}>
+                          <Tooltip label="Editar subtarea">
+                            <IconButton icon={<FiEdit3 />} size="xs" variant="ghost" colorScheme="blue" onClick={(e) => { e.stopPropagation(); openEditTask(p, t); }} />
+                          </Tooltip>
+                          <Tooltip label="Activar en Agenda">
+                            <IconButton icon={<FiClock />} size="xs" variant="ghost" colorScheme="purple" onClick={() => {
+                              addAgendaTask({ title: t.name, description: t.description || `Subtarea de ${p.name}`, date: t.startDate || format(new Date(), 'yyyy-MM-dd'), completed: false, section: 'proyectos', type: 'task' });
+                              addNotification({ title: 'Tarea enviada a Agenda', message: `"${t.name}" agregada a la agenda`, type: 'info', section: 'proyectos' });
+                            }} />
+                          </Tooltip>
+                        </HStack>
                       </Flex>
                     );
                   })}
@@ -308,7 +375,7 @@ function ProjectManager() {
                         <WrapItem key={tech}><Badge size="xs" colorScheme="purple">{tech}</Badge></WrapItem>
                       ))}
                     </Wrap>
-                    <Text fontSize="xs" color="gray.400" mt={1}>{s.defaultTasks.length} subtareas predefinidas</Text>
+                    <Text fontSize="xs" color="gray.400" mt={1}>{s.defaultTasks.length} subtareas predefinidas · ~{s.defaultTasks.length}h estimadas</Text>
                   </Box>
                 ))}
               </VStack>
@@ -445,12 +512,61 @@ function ProjectManager() {
                     ))}
                   </VStack>
                 </Box>
+
+                <Box p={3} bg={useColorModeValue('blue.50', 'blue.900')} borderRadius="lg">
+                  <HStack justify="space-between">
+                    <Text fontWeight="bold" fontSize="sm">Horas estimadas totales:</Text>
+                    <Badge colorScheme="purple" fontSize="md">{form.tasks.reduce((sum, t) => sum + (parseFloat(t.estimatedHours) || 0), 0)}h</Badge>
+                  </HStack>
+                </Box>
               </VStack>
             )}
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
             <Button onClick={save} isDisabled={!form.name}>{editing ? 'Guardar' : 'Crear'}</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isTaskModalOpen} onClose={onTaskModalClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Editar Subtarea</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl>
+                <FormLabel>Nombre</FormLabel>
+                <Input value={taskEditForm.name} onChange={(e) => setTaskEditForm((f) => ({ ...f, name: e.target.value }))} />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Descripción</FormLabel>
+                <Textarea value={taskEditForm.description} onChange={(e) => setTaskEditForm((f) => ({ ...f, description: e.target.value }))} rows={3} />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Horas estimadas</FormLabel>
+                <Input type="number" min={0.5} step={0.5} value={taskEditForm.estimatedHours} onChange={(e) => handleTaskEditFieldChange('estimatedHours', e.target.value)} />
+              </FormControl>
+              <HStack spacing={3} w="100%">
+                <FormControl flex={1}>
+                  <FormLabel>Fecha inicio</FormLabel>
+                  <Input type="date" value={taskEditForm.startDate} onChange={(e) => handleTaskEditFieldChange('startDate', e.target.value)} />
+                </FormControl>
+                <FormControl flex={1}>
+                  <FormLabel>Fecha fin (auto)</FormLabel>
+                  <Input type="date" value={taskEditForm.endDate} onChange={(e) => setTaskEditForm((f) => ({ ...f, endDate: e.target.value }))} />
+                </FormControl>
+              </HStack>
+              <FormControl display="flex" alignItems="center">
+                <FormLabel htmlFor="task-completed" mb="0">Completada</FormLabel>
+                <Switch id="task-completed" isChecked={taskEditForm.completed} onChange={(e) => setTaskEditForm((f) => ({ ...f, completed: e.target.checked }))} colorScheme="green" />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onTaskModalClose}>Cancelar</Button>
+            <Button onClick={saveTaskEdit} isDisabled={!taskEditForm.name} colorScheme="purple">Guardar cambios</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -672,20 +788,22 @@ function PizarraProyectos({ projectId }) {
   };
 
   const generateSubtasks = () => {
-    console.log('generateSubtasks called', { project, board });
-    if (!project || !board || board.length === 0) return;
-    const existingTasks = project.tasks || [];
-    const newTasks = board.map((item) => ({
-      id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
-      name: item.title || 'Sin título',
-      description: item.content || '',
-      completed: false,
-      estimatedHours: 1,
-      startDate: format(new Date(), 'yyyy-MM-dd'),
-      endDate: '',
-    }));
-    updateProject(projectId, { tasks: [...existingTasks, ...newTasks] });
-    console.log('Subtasks generated:', newTasks.length);
+    if (!project || !project.tasks || project.tasks.length === 0) return;
+    const existingBoard = board || [];
+    const existingIds = new Set(existingBoard.map(b => b.sourceTaskId));
+    const newItems = project.tasks
+      .filter(t => !existingIds.has(t.id))
+      .map((t, i) => ({
+        type: 'text',
+        title: t.name,
+        content: t.description || '',
+        position: { x: 20 + (existingBoard.length + i) * 260, y: 20 },
+        linkedTo: '',
+        sourceTaskId: t.id,
+      }));
+    if (newItems.length > 0) {
+      newItems.forEach(item => addProyectosPizarraItem(projectId, item));
+    }
   };
 
   const handleMouseDown = (e, itemId) => {
@@ -734,7 +852,7 @@ function PizarraProyectos({ projectId }) {
           {project && <Badge colorScheme="purple">{completedTasks}/{totalTasks} subtareas</Badge>}
         </HStack>
         <HStack>
-          <Button size="sm" colorScheme="green" onClick={generateSubtasks} isDisabled={!project} fontWeight="bold" px={4}>Generar subtareas</Button>
+          <Button size="sm" colorScheme="green" onClick={generateSubtasks} isDisabled={!project || !project.tasks || project.tasks.length === 0} fontWeight="bold" px={4}>Crear tarjetas desde subtareas</Button>
           <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo elemento</Button>
         </HStack>
       </Flex>
