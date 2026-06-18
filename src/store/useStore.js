@@ -499,9 +499,88 @@ const useStore = create((set, get) => {
     updateOposicionesPizarraItem: (id, data) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
     deleteOposicionesPizarraItem: (id) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
 
-    addProyectosPizarraItem: (projectId, item) => { set((s) => { const board = s.projectPizarras[projectId] || []; return { projectPizarras: { ...s.projectPizarras, [projectId]: [...board, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] } }; }); setTimeout(saveCurrentUserData, 0); },
-    updateProyectosPizarraItem: (projectId, id, data) => { set((s) => { const board = s.projectPizarras[projectId] || []; return { projectPizarras: { ...s.projectPizarras, [projectId]: board.map((p) => (p.id === id ? { ...p, ...data } : p)) } }; }); setTimeout(saveCurrentUserData, 0); },
-    deleteProyectosPizarraItem: (projectId, id) => { set((s) => { const board = s.projectPizarras[projectId] || []; return { projectPizarras: { ...s.projectPizarras, [projectId]: board.filter((p) => p.id !== id) } }; }); setTimeout(saveCurrentUserData, 0); },
+    addProjectBoard: (projectId, name) => {
+      const boardId = uuidv4();
+      set((s) => ({
+        projectPizarras: {
+          ...s.projectPizarras,
+          [projectId]: {
+            ...(s.projectPizarras[projectId] || {}),
+            [boardId]: { name, items: [], createdAt: new Date().toISOString() }
+          }
+        }
+      }));
+      setTimeout(saveCurrentUserData, 0);
+      return boardId;
+    },
+    deleteProjectBoard: (projectId, boardId) => {
+      set((s) => {
+        const boards = { ...(s.projectPizarras[projectId] || {}) };
+        delete boards[boardId];
+        return { projectPizarras: { ...s.projectPizarras, [projectId]: boards } };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    renameProjectBoard: (projectId, boardId, name) => {
+      set((s) => ({
+        projectPizarras: {
+          ...s.projectPizarras,
+          [projectId]: {
+            ...(s.projectPizarras[projectId] || {}),
+            [boardId]: { ...(s.projectPizarras[projectId]?.[boardId] || {}), name }
+          }
+        }
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
+    addProyectosPizarraItem: (projectId, boardId, item) => {
+      set((s) => {
+        const boards = s.projectPizarras[projectId] || {};
+        const board = boards[boardId] || { name: '', items: [] };
+        return {
+          projectPizarras: {
+            ...s.projectPizarras,
+            [projectId]: {
+              ...boards,
+              [boardId]: { ...board, items: [...board.items, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] }
+            }
+          }
+        };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    updateProyectosPizarraItem: (projectId, boardId, id, data) => {
+      set((s) => {
+        const boards = s.projectPizarras[projectId] || {};
+        const board = boards[boardId] || { name: '', items: [] };
+        return {
+          projectPizarras: {
+            ...s.projectPizarras,
+            [projectId]: {
+              ...boards,
+              [boardId]: { ...board, items: board.items.map((p) => (p.id === id ? { ...p, ...data } : p)) }
+            }
+          }
+        };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
+    deleteProyectosPizarraItem: (projectId, boardId, id) => {
+      set((s) => {
+        const boards = s.projectPizarras[projectId] || {};
+        const board = boards[boardId] || { name: '', items: [] };
+        return {
+          projectPizarras: {
+            ...s.projectPizarras,
+            [projectId]: {
+              ...boards,
+              [boardId]: { ...board, items: board.items.filter((p) => p.id !== id) }
+            }
+          }
+        };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
 
     addSupuestoPractico: (s) => { set((state) => ({ supuestosPracticos: [...state.supuestosPracticos, { ...s, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
     updateSupuestoPractico: (id, data) => { set((s) => ({ supuestosPracticos: s.supuestosPracticos.map((sp) => (sp.id === id ? { ...sp, ...data } : sp)) })); setTimeout(saveCurrentUserData, 0); },
@@ -526,12 +605,41 @@ const useStore = create((set, get) => {
     updateGymGoal: (id, data) => { set((s) => ({ gymGoals: s.gymGoals.map((g) => (g.id === id ? { ...g, ...data } : g)) })); setTimeout(saveCurrentUserData, 0); },
     deleteGymGoal: (id) => { set((s) => ({ gymGoals: s.gymGoals.filter((g) => g.id !== id) })); setTimeout(saveCurrentUserData, 0); },
 
-    addProject: (p) => { set((s) => ({ projects: [...s.projects, { ...p, id: uuidv4(), tasks: p.tasks || [], createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
+    addProject: (p) => { set((s) => ({ projects: [...s.projects, { ...p, id: uuidv4(), tasks: p.tasks || [], kanbanBoards: p.kanbanBoards || {}, createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
     updateProject: (id, data) => { set((s) => ({ projects: s.projects.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
     deleteProject: (id) => { set((s) => ({ projects: s.projects.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
 
     addProjectLog: (log) => { set((s) => ({ projectLogs: [...s.projectLogs, { ...log, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
     deleteProjectLog: (id) => { set((s) => ({ projectLogs: s.projectLogs.filter((l) => l.id !== id) })); setTimeout(saveCurrentUserData, 0); },
+
+    addKanbanBoard: (projectId, name) => {
+      const boardId = uuidv4();
+      set((s) => ({
+        projects: s.projects.map((p) => p.id === projectId ? { ...p, kanbanBoards: { ...(p.kanbanBoards || {}), [boardId]: { name, createdAt: new Date().toISOString() } } } : p)
+      }));
+      setTimeout(saveCurrentUserData, 0);
+      return boardId;
+    },
+    deleteKanbanBoard: (projectId, boardId) => {
+      set((s) => ({
+        projects: s.projects.map((p) => {
+          if (p.id !== projectId) return p;
+          const kb = { ...(p.kanbanBoards || {}) };
+          delete kb[boardId];
+          return { ...p, kanbanBoards: kb };
+        })
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
+    renameKanbanBoard: (projectId, boardId, name) => {
+      set((s) => ({
+        projects: s.projects.map((p) => {
+          if (p.id !== projectId) return p;
+          return { ...p, kanbanBoards: { ...(p.kanbanBoards || {}), [boardId]: { ...(p.kanbanBoards?.[boardId] || {}), name } } };
+        })
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
 
     addXP: (amount) => { set((s) => { const newXP = s.xp + amount; const newLevel = Math.floor(newXP / 100) + 1; return { xp: newXP, level: newLevel }; }); setTimeout(saveCurrentUserData, 0); },
     addBadge: (badge) => { set((s) => ({ badges: [...s.badges, { ...badge, id: uuidv4(), earnedAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Progress, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel, Wrap, WrapItem, Tag, Collapse, Switch, Checkbox, Tooltip } from '@chakra-ui/react';
 import { FiPlus, FiTrash2, FiEdit3, FiGrid, FiClock, FiChevronDown, FiChevronRight, FiTrendingUp, FiLink, FiImage, FiVideo, FiFileText, FiX } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -928,11 +928,19 @@ function ProjectStats() {
 
 function PizarraProyectos({ projectId }) {
   const store = useStore();
-  const board = store.projectPizarras[projectId] || [];
+  const projectPizarras = store.projectPizarras[projectId] || {};
+  const boardIds = Object.keys(projectPizarras);
+  const [selectedBoardId, setSelectedBoardId] = useState(boardIds[0] || '');
+  const currentBoard = projectPizarras[selectedBoardId];
+  const board = currentBoard?.items || [];
   const project = store.projects.find((p) => p.id === projectId);
-  const { addProyectosPizarraItem, updateProyectosPizarraItem, deleteProyectosPizarraItem, updateProject, addAgendaTask } = store;
+  const { addProyectosPizarraItem, updateProyectosPizarraItem, deleteProyectosPizarraItem, addProjectBoard, deleteProjectBoard, renameProjectBoard, updateProject, addAgendaTask } = store;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isTaskOpen, onOpen: onTaskOpen, onClose: onTaskClose } = useDisclosure();
+  const { isOpen: isBoardOpen, onOpen: onBoardOpen, onClose: onBoardClose } = useDisclosure();
+  const [boardName, setBoardName] = useState('');
+  const [renamingBoard, setRenamingBoard] = useState(null);
+  const [renameVal, setRenameVal] = useState('');
   const [form, setForm] = useState({ type: 'text', title: '', content: '', position: { x: 20, y: 20 }, linkedTo: '' });
   const [taskForm, setTaskForm] = useState({ title: '', description: '', date: format(new Date(), 'yyyy-MM-dd') });
   const [dragging, setDragging] = useState(null);
@@ -940,6 +948,12 @@ function PizarraProyectos({ projectId }) {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const boardBg = useColorModeValue('gray.50', 'gray.900');
+
+  useEffect(() => {
+    if (boardIds.length > 0 && !boardIds.includes(selectedBoardId)) {
+      setSelectedBoardId(boardIds[0]);
+    }
+  }, [boardIds, selectedBoardId]);
 
   const completedTasks = (project?.tasks || []).filter((t) => t.completed).length;
   const totalTasks = (project?.tasks || []).length;
@@ -967,8 +981,8 @@ function PizarraProyectos({ projectId }) {
 
   const saveItem = () => {
     const itemData = { ...form, linkedTo: form.linkedTo || '' };
-    if (form.id) updateProyectosPizarraItem(projectId, form.id, itemData);
-    else addProyectosPizarraItem(projectId, { ...itemData, position: form.position || { x: 20 + board.length * 20, y: 20 + board.length * 20 } });
+    if (form.id) updateProyectosPizarraItem(projectId, selectedBoardId, form.id, itemData);
+    else addProyectosPizarraItem(projectId, selectedBoardId, { ...itemData, position: form.position || { x: 20 + board.length * 20, y: 20 + board.length * 20 } });
     setForm({ type: 'text', title: '', content: '', position: { x: 20, y: 20 }, linkedTo: '' });
     onClose();
   };
@@ -992,22 +1006,51 @@ function PizarraProyectos({ projectId }) {
   };
 
   const generateSubtasks = () => {
-    if (!project || !project.tasks || project.tasks.length === 0) return;
-    const existingBoard = board || [];
-    const existingIds = new Set(existingBoard.map(b => b.sourceTaskId));
+    if (!project || !project.tasks || project.tasks.length === 0 || !selectedBoardId) return;
+    const existingIds = new Set(board.map(b => b.sourceTaskId));
     const newItems = project.tasks
       .filter(t => !existingIds.has(t.id))
       .map((t, i) => ({
         type: 'text',
         title: t.name,
         content: t.description || '',
-        position: { x: 20 + (existingBoard.length + i) * 260, y: 20 },
+        position: { x: 20 + (board.length + i) * 260, y: 20 },
         linkedTo: '',
         sourceTaskId: t.id,
       }));
     if (newItems.length > 0) {
-      newItems.forEach(item => addProyectosPizarraItem(projectId, item));
+      newItems.forEach(item => addProyectosPizarraItem(projectId, selectedBoardId, item));
     }
+  };
+
+  const clearBoard = () => {
+    if (!selectedBoardId) return;
+    board.forEach(item => deleteProyectosPizarraItem(projectId, selectedBoardId, item.id));
+  };
+
+  const handleCreateBoard = () => {
+    if (!boardName.trim()) return;
+    const newId = addProjectBoard(projectId, boardName.trim());
+    setSelectedBoardId(newId);
+    setBoardName('');
+    onBoardClose();
+  };
+
+  const handleDeleteBoard = (bid) => {
+    deleteProjectBoard(projectId, bid);
+  };
+
+  const startRenameBoard = (bid, currentName) => {
+    setRenamingBoard(bid);
+    setRenameVal(currentName);
+  };
+
+  const confirmRenameBoard = () => {
+    if (renamingBoard && renameVal.trim()) {
+      renameProjectBoard(projectId, renamingBoard, renameVal.trim());
+    }
+    setRenamingBoard(null);
+    setRenameVal('');
   };
 
   const handleMouseDown = (e, itemId) => {
@@ -1025,7 +1068,7 @@ function PizarraProyectos({ projectId }) {
     const rect = boardEl.getBoundingClientRect();
     const x = Math.max(0, e.clientX - rect.left - dragOffset.x);
     const y = Math.max(0, e.clientY - rect.top - dragOffset.y);
-    updateProyectosPizarraItem(projectId, dragging, { position: { x, y } });
+    updateProyectosPizarraItem(projectId, selectedBoardId, dragging, { position: { x, y } });
   };
 
   const handleMouseUp = () => { setDragging(null); };
@@ -1050,24 +1093,50 @@ function PizarraProyectos({ projectId }) {
 
   return (
     <Box>
-      <Flex justify="space-between" align="center" mb={4}>
+      <Flex justify="space-between" align="center" mb={4} wrap="wrap" gap={2}>
         <HStack>
           <Text fontWeight="bold">Pizarra</Text>
           {project && <Badge colorScheme="purple">{completedTasks}/{totalTasks} subtareas</Badge>}
         </HStack>
         <HStack>
-          <Button size="sm" colorScheme="green" onClick={generateSubtasks} isDisabled={!project || !project.tasks || project.tasks.length === 0} fontWeight="bold" px={4}>Crear tarjetas desde subtareas</Button>
-          <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo elemento</Button>
+          <Button size="sm" colorScheme="green" onClick={generateSubtasks} isDisabled={!project || !project.tasks || project.tasks.length === 0 || !selectedBoardId} fontWeight="bold" px={4}>Actualizar desde subtareas</Button>
+          <Button size="sm" colorScheme="red" variant="outline" onClick={clearBoard} isDisabled={!selectedBoardId || board.length === 0}>Limpiar pizarra</Button>
+          <Button leftIcon={<FiPlus />} size="sm" onClick={openNew} isDisabled={!selectedBoardId}>Nuevo elemento</Button>
         </HStack>
       </Flex>
+
+      <Flex mb={3} align="center" gap={2} wrap="wrap">
+        <Text fontSize="sm" fontWeight="bold">Tablero:</Text>
+        <Select size="sm" w="200px" value={selectedBoardId} onChange={(e) => setSelectedBoardId(e.target.value)}>
+          {boardIds.length === 0 && <option value="">Sin tableros</option>}
+          {boardIds.map((bid) => <option key={bid} value={bid}>{projectPizarras[bid]?.name || 'Tablero'}</option>)}
+        </Select>
+        <Button size="xs" colorScheme="blue" onClick={onBoardOpen}>+ Tablero</Button>
+        {selectedBoardId && (
+          <>
+            <Button size="xs" variant="ghost" onClick={() => startRenameBoard(selectedBoardId, currentBoard?.name || '')}>Renombrar</Button>
+            <Button size="xs" variant="ghost" colorScheme="red" onClick={() => handleDeleteBoard(selectedBoardId)} isDisabled={boardIds.length <= 1}>Eliminar</Button>
+          </>
+        )}
+      </Flex>
+
+      {renamingBoard && (
+        <HStack mb={2}>
+          <Input size="sm" w="200px" value={renameVal} onChange={(e) => setRenameVal(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && confirmRenameBoard()} />
+          <Button size="xs" colorScheme="green" onClick={confirmRenameBoard}>OK</Button>
+          <Button size="xs" variant="ghost" onClick={() => setRenamingBoard(null)}>Cancelar</Button>
+        </HStack>
+      )}
+
       {project && (
         <Box mb={3}>
           <Progress value={totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0} size="sm" colorScheme="green" borderRadius="full" />
         </Box>
       )}
       {!project && <Text color="gray.500" textAlign="center" py={8}>Selecciona un proyecto primero</Text>}
-      {project && board.length === 0 && <Text color="gray.500" textAlign="center" py={8}>Pizarra vacía. Añade elementos y arrástralos libremente.</Text>}
-      {project && (
+      {project && boardIds.length === 0 && <Text color="gray.500" textAlign="center" py={8}>Crea un tablero para empezar.</Text>}
+      {project && selectedBoardId && board.length === 0 && <Text color="gray.500" textAlign="center" py={8}>Pizarra vacía. Añade elementos y arrástralos libremente.</Text>}
+      {project && selectedBoardId && (
         <Box position="relative" w="100%" h="600px" bg={boardBg} borderRadius="xl" border="1px solid" borderColor={borderColor} overflow="auto" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
           {board.map((item) => {
             const linkedItem = item.linkedTo ? board.find((b) => b.id === item.linkedTo) : null;
@@ -1077,7 +1146,7 @@ function PizarraProyectos({ projectId }) {
                   <Badge colorScheme={getTypeColor(item.type)} leftIcon={getTypeIcon(item.type)} fontSize="xs">{item.type}</Badge>
                   <HStack spacing={0}>
                     <IconButton icon={<FiEdit3 />} size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(item); }} />
-                    <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" onClick={(e) => { e.stopPropagation(); deleteProyectosPizarraItem(projectId, item.id); }} />
+                    <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" onClick={(e) => { e.stopPropagation(); deleteProyectosPizarraItem(projectId, selectedBoardId, item.id); }} />
                   </HStack>
                 </HStack>
                 <Text fontWeight="bold" fontSize="sm" noOfLines={1}>{item.title}</Text>
@@ -1087,7 +1156,7 @@ function PizarraProyectos({ projectId }) {
               </Box>
             );
           })}
-          <svg position="absolute" top="0" left="0" width="100%" height="100%" style={{ pointerEvents: 'none', zIndex: 0 }}>
+          <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
             {board.map((item) => {
               if (!item.linkedTo) return null;
               const target = board.find(b => b.id === item.linkedTo);
@@ -1157,6 +1226,24 @@ function PizarraProyectos({ projectId }) {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <Modal isOpen={isBoardOpen} onClose={onBoardClose} size="sm">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Nuevo tablero</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl>
+              <FormLabel>Nombre del tablero</FormLabel>
+              <Input value={boardName} onChange={(e) => setBoardName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateBoard()} placeholder="Ej: Frontend, Backend, Ideas..." />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onBoardClose}>Cancelar</Button>
+            <Button onClick={handleCreateBoard} isDisabled={!boardName.trim()} colorScheme="purple">Crear</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
@@ -1164,7 +1251,19 @@ function PizarraProyectos({ projectId }) {
 function KanbanBoard({ projectId }) {
   const store = useStore();
   const project = store.projects.find((p) => p.id === projectId);
-  const { updateProject, addAgendaTask, addNotification } = store;
+  const { updateProject, addAgendaTask, addNotification, addKanbanBoard, deleteKanbanBoard, renameKanbanBoard } = store;
+
+  const kanbanBoards = project?.kanbanBoards || {};
+  const kanbanBoardIds = Object.keys(kanbanBoards);
+  const [selectedKbBoardId, setSelectedKbBoardId] = useState(kanbanBoardIds[0] || '');
+  const [kbBoardName, setKbBoardName] = useState('');
+  const { isOpen: isKbBoardOpen, onOpen: onKbBoardOpen, onClose: onKbBoardClose } = useDisclosure();
+
+  useEffect(() => {
+    if (kanbanBoardIds.length > 0 && !kanbanBoardIds.includes(selectedKbBoardId)) {
+      setSelectedKbBoardId(kanbanBoardIds[0]);
+    }
+  }, [kanbanBoardIds, selectedKbBoardId]);
 
   const columns = [
     { id: 'pendiente', label: 'Pendiente', color: 'gray' },
@@ -1201,24 +1300,25 @@ function KanbanBoard({ projectId }) {
     setDragOverColumn(columnId);
   };
 
-  const handleDrop = (e, columnId) => {
+  const handleDrop = useCallback((e, columnId) => {
     e.preventDefault();
-    if (!draggedTask || !project) return;
-    const updatedTasks = project.tasks.map(t =>
+    const currentProject = useStore.getState().projects.find(p => p.id === projectId);
+    if (!draggedTask || !currentProject) return;
+    const updatedTasks = currentProject.tasks.map(t =>
       t.id === draggedTask ? { ...t, status: columnId } : t
     );
     updateProject(projectId, { tasks: updatedTasks });
 
     if (columnId === 'completado') {
-      const task = project.tasks.find(t => t.id === draggedTask);
+      const task = currentProject.tasks.find(t => t.id === draggedTask);
       if (task) {
-        addNotification({ title: 'Subtarea completada', message: `"${task.name}" completada en "${project.name}"`, type: 'success', section: 'proyectos' });
+        addNotification({ title: 'Subtarea completada', message: `"${task.name}" completada en "${currentProject.name}"`, type: 'success', section: 'proyectos' });
       }
     }
 
     setDraggedTask(null);
     setDragOverColumn(null);
-  };
+  }, [draggedTask, projectId, updateProject, addNotification]);
 
   const completedCount = getColumnTasks('completado').length;
   const totalTasks = (project?.tasks || []).length;
@@ -1238,6 +1338,20 @@ function KanbanBoard({ projectId }) {
     updateProject(projectId, { tasks: [...(project.tasks || []), newTask] });
     setNewTaskForm({ name: '', description: '', estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
     setIsAddOpen(false);
+  };
+
+  const syncFromSubtasks = () => {
+    if (!project || !project.tasks || project.tasks.length === 0) return;
+    const updatedTasks = project.tasks.map(t => ({
+      ...t,
+      status: t.completed ? 'completado' : (t.status || 'pendiente'),
+    }));
+    updateProject(projectId, { tasks: updatedTasks });
+  };
+
+  const clearBoard = () => {
+    if (!project) return;
+    updateProject(projectId, { tasks: [] });
   };
 
   const openEditTask = (task) => {
@@ -1284,15 +1398,40 @@ function KanbanBoard({ projectId }) {
     });
   };
 
+  const handleCreateKbBoard = () => {
+    if (!kbBoardName.trim()) return;
+    const newId = addKanbanBoard(projectId, kbBoardName.trim());
+    setSelectedKbBoardId(newId);
+    setKbBoardName('');
+    onKbBoardClose();
+  };
+
   return (
     <Box>
-      <Flex justify="space-between" align="center" mb={4}>
+      <Flex justify="space-between" align="center" mb={4} wrap="wrap" gap={2}>
         <HStack>
           <Text fontWeight="bold">Tablero Kanban</Text>
           {project && <Badge colorScheme="purple">{completedCount}/{totalTasks} completadas</Badge>}
         </HStack>
-        <Button leftIcon={<FiPlus />} size="sm" onClick={() => setIsAddOpen(true)} isDisabled={!project}>Nueva tarea</Button>
+        <HStack>
+          <Button size="sm" colorScheme="blue" onClick={syncFromSubtasks} isDisabled={!project || !project.tasks || project.tasks.length === 0}>Sincronizar desde subtareas</Button>
+          <Button size="sm" colorScheme="red" variant="outline" onClick={clearBoard} isDisabled={!project || totalTasks === 0}>Limpiar tablero</Button>
+          <Button leftIcon={<FiPlus />} size="sm" onClick={() => setIsAddOpen(true)} isDisabled={!project}>Nueva tarea</Button>
+        </HStack>
       </Flex>
+
+      <Flex mb={3} align="center" gap={2} wrap="wrap">
+        <Text fontSize="sm" fontWeight="bold">Tablero:</Text>
+        <Select size="sm" w="200px" value={selectedKbBoardId} onChange={(e) => setSelectedKbBoardId(e.target.value)}>
+          {kanbanBoardIds.length === 0 && <option value="">Sin tableros</option>}
+          {kanbanBoardIds.map((bid) => <option key={bid} value={bid}>{kanbanBoards[bid]?.name || 'Tablero'}</option>)}
+        </Select>
+        <Button size="xs" colorScheme="blue" onClick={onKbBoardOpen}>+ Tablero</Button>
+        {selectedKbBoardId && (
+          <Button size="xs" variant="ghost" colorScheme="red" onClick={() => { deleteKanbanBoard(projectId, selectedKbBoardId); setSelectedKbBoardId(kanbanBoardIds.find(b => b !== selectedKbBoardId) || ''); }} isDisabled={kanbanBoardIds.length <= 1}>Eliminar</Button>
+        )}
+      </Flex>
+
       {project && (
         <Box mb={4}>
           <Flex justify="space-between" mb={1}>
@@ -1303,7 +1442,8 @@ function KanbanBoard({ projectId }) {
         </Box>
       )}
       {!project && <Text color="gray.500" textAlign="center" py={8}>Selecciona un proyecto primero</Text>}
-      {project && (
+      {project && kanbanBoardIds.length === 0 && <Text color="gray.500" textAlign="center" py={8}>Crea un tablero kanban para empezar.</Text>}
+      {project && selectedKbBoardId && (
         <Flex gap={4} align="flex-start" overflowX="auto" pb={4}>
           {columns.map((col) => (
             <Box
@@ -1422,14 +1562,34 @@ function KanbanBoard({ projectId }) {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <Modal isOpen={isKbBoardOpen} onClose={onKbBoardClose} size="sm">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Nuevo tablero Kanban</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl>
+              <FormLabel>Nombre del tablero</FormLabel>
+              <Input value={kbBoardName} onChange={(e) => setKbBoardName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreateKbBoard()} placeholder="Ej: Sprint 1, Backlog..." />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onKbBoardClose}>Cancelar</Button>
+            <Button onClick={handleCreateKbBoard} isDisabled={!kbBoardName.trim()} colorScheme="purple">Crear</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
 
 export default function Proyectos() {
-  const { projects } = useStore();
+  const { projects, projectPizarras, addProjectBoard } = useStore();
   const [pizarraProjectId, setPizarraProjectId] = useState('');
+  const [pizarraBoardId, setPizarraBoardId] = useState('');
   const [kanbanProjectId, setKanbanProjectId] = useState('');
+  const [kanbanBoardId, setKanbanBoardId] = useState('');
   const tabBg = useColorModeValue('white', 'gray.800');
 
   useEffect(() => {
@@ -1439,6 +1599,35 @@ export default function Proyectos() {
   useEffect(() => {
     if (projects.length > 0 && !kanbanProjectId) setKanbanProjectId(projects[0].id);
   }, [projects, kanbanProjectId]);
+
+  const pizarraBoards = pizarraProjectId ? (projectPizarras[pizarraProjectId] || {}) : {};
+  const pizarraBoardIds = Object.keys(pizarraBoards);
+
+  useEffect(() => {
+    if (pizarraBoardIds.length > 0 && !pizarraBoardIds.includes(pizarraBoardId)) {
+      setPizarraBoardId(pizarraBoardIds[0]);
+    }
+  }, [pizarraBoardIds, pizarraBoardId]);
+
+  const kanbanProject = projects.find(p => p.id === kanbanProjectId);
+  const kanbanBoards = kanbanProject?.kanbanBoards || {};
+  const kanbanBoardIds = Object.keys(kanbanBoards);
+
+  useEffect(() => {
+    if (kanbanBoardIds.length > 0 && !kanbanBoardIds.includes(kanbanBoardId)) {
+      setKanbanBoardId(kanbanBoardIds[0]);
+    }
+  }, [kanbanBoardIds, kanbanBoardId]);
+
+  const handlePizarraProjectChange = (val) => {
+    setPizarraProjectId(val);
+    setPizarraBoardId('');
+  };
+
+  const handleKanbanProjectChange = (val) => {
+    setKanbanProjectId(val);
+    setKanbanBoardId('');
+  };
 
   return (
     <Tabs variant="enclosed" colorScheme="purple">
@@ -1458,11 +1647,19 @@ export default function Proyectos() {
             <Text color="gray.500" textAlign="center" py={8}>Crea un proyecto primero para usar la pizarra</Text>
           ) : (
             <Box>
-              <HStack mb={4} p={3} bg={tabBg} borderRadius="xl" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+              <HStack mb={4} p={3} bg={tabBg} borderRadius="xl" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')} wrap="wrap" gap={2}>
                 <Text fontSize="sm" fontWeight="bold">Proyecto:</Text>
-                <Select size="sm" w="250px" value={pizarraProjectId} onChange={(e) => setPizarraProjectId(e.target.value)}>
+                <Select size="sm" w="250px" value={pizarraProjectId} onChange={(e) => handlePizarraProjectChange(e.target.value)}>
                   {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </Select>
+                {pizarraBoardIds.length > 0 && (
+                  <>
+                    <Text fontSize="sm" fontWeight="bold">Tablero:</Text>
+                    <Select size="sm" w="200px" value={pizarraBoardId} onChange={(e) => setPizarraBoardId(e.target.value)}>
+                      {pizarraBoardIds.map((bid) => <option key={bid} value={bid}>{pizarraBoards[bid]?.name || 'Tablero'}</option>)}
+                    </Select>
+                  </>
+                )}
               </HStack>
               {pizarraProjectId && <PizarraProyectos projectId={pizarraProjectId} />}
             </Box>
@@ -1473,11 +1670,19 @@ export default function Proyectos() {
             <Text color="gray.500" textAlign="center" py={8}>Crea un proyecto primero para usar el tablero</Text>
           ) : (
             <Box>
-              <HStack mb={4} p={3} bg={tabBg} borderRadius="xl" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+              <HStack mb={4} p={3} bg={tabBg} borderRadius="xl" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')} wrap="wrap" gap={2}>
                 <Text fontSize="sm" fontWeight="bold">Proyecto:</Text>
-                <Select size="sm" w="250px" value={kanbanProjectId} onChange={(e) => setKanbanProjectId(e.target.value)}>
+                <Select size="sm" w="250px" value={kanbanProjectId} onChange={(e) => handleKanbanProjectChange(e.target.value)}>
                   {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </Select>
+                {kanbanBoardIds.length > 0 && (
+                  <>
+                    <Text fontSize="sm" fontWeight="bold">Tablero:</Text>
+                    <Select size="sm" w="200px" value={kanbanBoardId} onChange={(e) => setKanbanBoardId(e.target.value)}>
+                      {kanbanBoardIds.map((bid) => <option key={bid} value={bid}>{kanbanBoards[bid]?.name || 'Tablero'}</option>)}
+                    </Select>
+                  </>
+                )}
               </HStack>
               {kanbanProjectId && <KanbanBoard projectId={kanbanProjectId} />}
             </Box>
