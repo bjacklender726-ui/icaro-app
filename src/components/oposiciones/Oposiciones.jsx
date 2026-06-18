@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Progress, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel, Tooltip, Tag, Wrap, WrapItem, Switch, NumberInput, NumberInputField, Divider } from '@chakra-ui/react';
-import { FiPlus, FiTrash2, FiEdit3, FiPlay, FiPause, FiSquare, FiCheck, FiClock, FiBookOpen, FiTarget, FiAward, FiFileText, FiBook, FiCheckCircle, FiBarChart2, FiEdit } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit3, FiPlay, FiPause, FiSquare, FiCheck, FiClock, FiBookOpen, FiTarget, FiAward, FiFileText, FiBook, FiCheckCircle, FiBarChart2, FiEdit, FiLink, FiExternalLink, FiImage, FiVideo, FiGrid } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import useStore from '../../store/useStore';
 import { formatDate } from '../../utils/helpers';
@@ -62,77 +62,106 @@ function Cronometro({ onRegister }) {
   );
 }
 
-// ===== CONVOCATORIA FORM =====
-function ConvocatoriaForm() {
-  const { convocatoria, updateConvocatoria } = useStore();
+// ===== CONVOCATORIA MANAGER =====
+function ConvocatoriaManager() {
+  const { convocatoria, addConvocatoria, updateConvocatoria, deleteConvocatoria } = useStore();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({
+    nombre: '', organismo: '', plazoInscripcionInicio: '', plazoInscripcionFin: '',
+    inscrito: false, fechaAdmitidos: '', listasProvisionales: '', fechaExamen: '',
+    lugarExamen: '', tasa: '', numeroPlazas: '', mediasAprobar: '', notas: '',
+  });
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const handleChange = (field, value) => updateConvocatoria({ [field]: value });
+  const emptyForm = {
+    nombre: '', organismo: '', plazoInscripcionInicio: '', plazoInscripcionFin: '',
+    inscrito: false, fechaAdmitidos: '', listasProvisionales: '', fechaExamen: '',
+    lugarExamen: '', tasa: '', numeroPlazas: '', mediasAprobar: '', notas: '',
+  };
+
+  const openNew = () => { setEditing(null); setForm(emptyForm); onOpen(); };
+  const openEdit = (c) => { setEditing(c); setForm({ ...c }); onOpen(); };
+  const save = () => {
+    if (editing) updateConvocatoria(editing.id, form);
+    else addConvocatoria(form);
+    onClose();
+  };
+
+  const handleChange = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
   return (
-    <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-      <Text fontWeight="bold" fontSize="lg" mb={4}>Convocatoria</Text>
-      <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
-        <FormControl>
-          <FormLabel>Nombre de la oposición</FormLabel>
-          <Input value={convocatoria.nombre} onChange={(e) => handleChange('nombre', e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Organismo</FormLabel>
-          <Input value={convocatoria.organismo} onChange={(e) => handleChange('organismo', e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Plazo inscripción inicio</FormLabel>
-          <Input type="date" value={convocatoria.plazoInscripcionInicio} onChange={(e) => handleChange('plazoInscripcionInicio', e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Plazo inscripción fin</FormLabel>
-          <Input type="date" value={convocatoria.plazoInscripcionFin} onChange={(e) => handleChange('plazoInscripcionFin', e.target.value)} />
-        </FormControl>
-        <FormControl display="flex" alignItems="center">
-          <FormLabel mb="0">¿Estás inscrito?</FormLabel>
-          <Switch colorScheme="green" isChecked={convocatoria.inscrito} onChange={(e) => handleChange('inscrito', e.target.checked)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Fecha de admitidos</FormLabel>
-          <Input type="date" value={convocatoria.fechaAdmitidos} onChange={(e) => handleChange('fechaAdmitidos', e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Listas provisionales</FormLabel>
-          <Input type="date" value={convocatoria.listasProvisionales} onChange={(e) => handleChange('listasProvisionales', e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Fecha de examen</FormLabel>
-          <Input type="date" value={convocatoria.fechaExamen} onChange={(e) => handleChange('fechaExamen', e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Lugar del examen</FormLabel>
-          <Input value={convocatoria.lugarExamen} onChange={(e) => handleChange('lugarExamen', e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Tasa a pagar (€)</FormLabel>
-          <NumberInput value={convocatoria.tasa} onChange={(v) => handleChange('tasa', v)}>
-            <NumberInputField />
-          </NumberInput>
-        </FormControl>
-        <FormControl>
-          <FormLabel>Nº de plazas</FormLabel>
-          <NumberInput value={convocatoria.numeroPlazas} onChange={(v) => handleChange('numeroPlazas', v)}>
-            <NumberInputField />
-          </NumberInput>
-        </FormControl>
-        <FormControl>
-          <FormLabel>Media mínima para aprobar</FormLabel>
-          <NumberInput value={convocatoria.mediasAprobar} onChange={(v) => handleChange('mediasAprobar', v)}>
-            <NumberInputField />
-          </NumberInput>
-        </FormControl>
-      </Grid>
-      <FormControl mt={4}>
-        <FormLabel>Notas adicionales</FormLabel>
-        <Textarea value={convocatoria.notas} onChange={(e) => handleChange('notas', e.target.value)} rows={3} />
-      </FormControl>
+    <Box>
+      <Flex justify="space-between" mb={4}>
+        <Text fontWeight="bold">Convocatorias</Text>
+        <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nueva Convocatoria</Button>
+      </Flex>
+      <VStack spacing={4} align="stretch">
+        {convocatoria.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay convocatorias creadas</Text>}
+        {convocatoria.map((c) => (
+          <Box key={c.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+            <Flex justify="space-between" align="start">
+              <Box flex={1}>
+                <HStack mb={2} wrap="wrap">
+                  <Text fontWeight="bold">{c.nombre || 'Sin nombre'}</Text>
+                  {c.organismo && <Badge colorScheme="blue">{c.organismo}</Badge>}
+                  {c.inscrito && <Badge colorScheme="green">Inscrito</Badge>}
+                </HStack>
+                <HStack spacing={4} fontSize="sm" color="gray.500" wrap="wrap">
+                  {c.fechaExamen && <Text>Examen: {c.fechaExamen}</Text>}
+                  {c.plazoInscripcionInicio && c.plazoInscripcionFin && <Text>Inscripción: {c.plazoInscripcionInicio} → {c.plazoInscripcionFin}</Text>}
+                  {c.lugarExamen && <Text>Lugar: {c.lugarExamen}</Text>}
+                </HStack>
+                <HStack spacing={3} mt={1} fontSize="sm" color="gray.400" wrap="wrap">
+                  {c.tasa && <Text>Tasa: {c.tasa}€</Text>}
+                  {c.numeroPlazas && <Text>Plazas: {c.numeroPlazas}</Text>}
+                  {c.mediasAprobar && <Text>Media mín: {c.mediasAprobar}</Text>}
+                </HStack>
+                {c.notas && <Text fontSize="sm" mt={1} color="gray.400">{c.notas}</Text>}
+              </Box>
+              <HStack>
+                <IconButton icon={<FiEdit3 />} size="xs" onClick={() => openEdit(c)} />
+                <IconButton icon={<FiTrash2 />} size="xs" colorScheme="red" onClick={() => deleteConvocatoria(c.id)} />
+              </HStack>
+            </Flex>
+          </Box>
+        ))}
+      </VStack>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{editing ? 'Editar Convocatoria' : 'Nueva Convocatoria'}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4} w="100%">
+                <FormControl><FormLabel>Nombre de la oposición</FormLabel><Input value={form.nombre} onChange={(e) => handleChange('nombre', e.target.value)} /></FormControl>
+                <FormControl><FormLabel>Organismo</FormLabel><Input value={form.organismo} onChange={(e) => handleChange('organismo', e.target.value)} /></FormControl>
+                <FormControl><FormLabel>Plazo inscripción inicio</FormLabel><Input type="date" value={form.plazoInscripcionInicio} onChange={(e) => handleChange('plazoInscripcionInicio', e.target.value)} /></FormControl>
+                <FormControl><FormLabel>Plazo inscripción fin</FormLabel><Input type="date" value={form.plazoInscripcionFin} onChange={(e) => handleChange('plazoInscripcionFin', e.target.value)} /></FormControl>
+                <FormControl display="flex" alignItems="center">
+                  <FormLabel mb="0">¿Estás inscrito?</FormLabel>
+                  <Switch colorScheme="green" isChecked={form.inscrito} onChange={(e) => handleChange('inscrito', e.target.checked)} />
+                </FormControl>
+                <FormControl><FormLabel>Fecha de admitidos</FormLabel><Input type="date" value={form.fechaAdmitidos} onChange={(e) => handleChange('fechaAdmitidos', e.target.value)} /></FormControl>
+                <FormControl><FormLabel>Listas provisionales</FormLabel><Input type="date" value={form.listasProvisionales} onChange={(e) => handleChange('listasProvisionales', e.target.value)} /></FormControl>
+                <FormControl><FormLabel>Fecha de examen</FormLabel><Input type="date" value={form.fechaExamen} onChange={(e) => handleChange('fechaExamen', e.target.value)} /></FormControl>
+                <FormControl><FormLabel>Lugar del examen</FormLabel><Input value={form.lugarExamen} onChange={(e) => handleChange('lugarExamen', e.target.value)} /></FormControl>
+                <FormControl><FormLabel>Tasa a pagar (€)</FormLabel><NumberInput value={form.tasa} onChange={(v) => handleChange('tasa', v)}><NumberInputField /></NumberInput></FormControl>
+                <FormControl><FormLabel>Nº de plazas</FormLabel><NumberInput value={form.numeroPlazas} onChange={(v) => handleChange('numeroPlazas', v)}><NumberInputField /></NumberInput></FormControl>
+                <FormControl><FormLabel>Media mínima para aprobar</FormLabel><NumberInput value={form.mediasAprobar} onChange={(v) => handleChange('mediasAprobar', v)}><NumberInputField /></NumberInput></FormControl>
+              </Grid>
+              <FormControl w="100%"><FormLabel>Notas adicionales</FormLabel><Textarea value={form.notas} onChange={(e) => handleChange('notas', e.target.value)} rows={3} /></FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
+            <Button onClick={save} isDisabled={!form.nombre}>{editing ? 'Guardar' : 'Crear'}</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
@@ -493,14 +522,14 @@ function SupuestosPracticosManager() {
 
 // ===== SIMULACROS MANAGER =====
 function SimulacrosManager() {
-  const { simulacros, addSimulacro, updateSimulacro, deleteSimulacro, convocatoria } = useStore();
+  const { simulacros, addSimulacro, updateSimulacro, deleteSimulacro } = useStore();
+  const convocatoria = useStore((s) => s.convocatoria);
+  const mediaAprobar = Number(convocatoria[0]?.mediasAprobar) || 70;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ titulo: '', fecha: '', puntuacion: '', tiempoLimite: '', tiempoEmpleado: '', aprobado: false, numPreguntas: '', aciertos: '', errores: '', blancos: '', notas: '' });
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-
-  const mediaAprobar = Number(convocatoria.mediasAprobar) || 70;
 
   const stats = useMemo(() => {
     const total = simulacros.length;
@@ -603,6 +632,150 @@ function SimulacrosManager() {
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
             <Button onClick={save} isDisabled={!form.titulo}>{editing ? 'Guardar' : 'Crear'}</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
+  );
+}
+
+// ===== PIZARRA MANAGER =====
+function PizarraManager() {
+  const { oposicionesPizarra, addOposicionesPizarraItem, updateOposicionesPizarraItem, deleteOposicionesPizarraItem, addAgendaTask } = useStore();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isTaskOpen, onOpen: onTaskOpen, onClose: onTaskClose } = useDisclosure();
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ type: 'text', title: '', content: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', date: '' });
+  const [taskItem, setTaskItem] = useState(null);
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const rowBg = useColorModeValue('gray.50', 'gray.700');
+
+  const extractYouTubeId = (url) => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([^&?#]+)/);
+    return match ? match[1] : null;
+  };
+
+  const openNew = () => { setEditing(null); setForm({ type: 'text', title: '', content: '' }); onOpen(); };
+  const openEdit = (item) => { setEditing(item); setForm({ type: item.type, title: item.title, content: item.content }); onOpen(); };
+  const save = () => {
+    if (editing) updateOposicionesPizarraItem(editing.id, form);
+    else addOposicionesPizarraItem(form);
+    onClose();
+  };
+
+  const openTaskModal = (item) => {
+    setTaskItem(item);
+    setTaskForm({ title: item.title, description: '', date: new Date().toISOString().split('T')[0] });
+    onTaskOpen();
+  };
+
+  const createTask = () => {
+    addAgendaTask({ title: taskForm.title, description: taskForm.description, date: taskForm.date, completed: false });
+    onTaskClose();
+  };
+
+  const renderContent = (item) => {
+    if (item.type === 'youtube') {
+      const videoId = extractYouTubeId(item.content);
+      return videoId ? (
+        <Box borderRadius="md" overflow="hidden" w="100%" maxW="480px">
+          <Box as="iframe" src={`https://www.youtube.com/embed/${videoId}`} w="100%" h="270px" frameBorder="0" allowFullScreen title={item.title} />
+        </Box>
+      ) : <Text fontSize="sm" color="red.400">URL de YouTube no válida</Text>;
+    }
+    if (item.type === 'image') {
+      return <Box as="img" src={item.content} alt={item.title} maxW="100%" maxH="300px" borderRadius="md" objectFit="contain" fallback={<Text fontSize="sm" color="red.400">No se pudo cargar la imagen</Text>} />;
+    }
+    if (item.type === 'link') {
+      return <HStack><FiExternalLink /><Text as="a" href={item.content} target="_blank" rel="noopener noreferrer" color="blue.400" fontSize="sm" wordBreak="break-all">{item.content}</Text></HStack>;
+    }
+    return <Text fontSize="sm" whiteSpace="pre-wrap">{item.content}</Text>;
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'youtube': return <FiVideo size={14} />;
+      case 'link': return <FiLink size={14} />;
+      case 'image': return <FiImage size={14} />;
+      default: return <FiFileText size={14} />;
+    }
+  };
+
+  const getTypeBadge = (type) => {
+    const colors = { text: 'gray', link: 'blue', youtube: 'red', image: 'purple' };
+    const labels = { text: 'Nota', link: 'Enlace', youtube: 'YouTube', image: 'Imagen' };
+    return <Badge colorScheme={colors[type] || 'gray'}>{labels[type] || type}</Badge>;
+  };
+
+  return (
+    <Box>
+      <Flex justify="space-between" mb={4}>
+        <Text fontWeight="bold">Pizarra de Oposiciones</Text>
+        <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Elemento</Button>
+      </Flex>
+      <VStack spacing={4} align="stretch">
+        {oposicionesPizarra.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay elementos en la pizarra</Text>}
+        {oposicionesPizarra.map((item) => (
+          <Box key={item.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+            <Flex justify="space-between" align="start">
+              <Box flex={1}>
+                <HStack mb={2} wrap="wrap">
+                  <HStack spacing={1}>{getTypeIcon(item.type)}<Text fontWeight="bold">{item.title}</Text></HStack>
+                  {getTypeBadge(item.type)}
+                </HStack>
+                <Box>{renderContent(item)}</Box>
+              </Box>
+              <HStack>
+                <Button size="xs" leftIcon={<FiPlus />} variant="outline" colorScheme="green" onClick={() => openTaskModal(item)}>Crear tarea</Button>
+                <IconButton icon={<FiEdit3 />} size="xs" onClick={() => openEdit(item)} />
+                <IconButton icon={<FiTrash2 />} size="xs" colorScheme="red" onClick={() => deleteOposicionesPizarraItem(item.id)} />
+              </HStack>
+            </Flex>
+          </Box>
+        ))}
+      </VStack>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{editing ? 'Editar Elemento' : 'Nuevo Elemento'}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl><FormLabel>Tipo</FormLabel><Select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
+                <option value="text">Nota / Texto</option>
+                <option value="link">Enlace</option>
+                <option value="youtube">YouTube</option>
+                <option value="image">Imagen</option>
+              </Select></FormControl>
+              <FormControl><FormLabel>Título</FormLabel><Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} /></FormControl>
+              <FormControl><FormLabel>{form.type === 'text' ? 'Contenido' : 'URL'}</FormLabel>{form.type === 'text' ? <Textarea value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} rows={5} /> : <Input value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} placeholder={form.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' : form.type === 'image' ? 'https://example.com/image.jpg' : 'https://example.com'} />}</FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
+            <Button onClick={save} isDisabled={!form.title || !form.content}>{editing ? 'Guardar' : 'Crear'}</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isTaskOpen} onClose={onTaskClose} size="sm">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Crear Tarea en Agenda</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl><FormLabel>Título</FormLabel><Input value={taskForm.title} onChange={(e) => setTaskForm((f) => ({ ...f, title: e.target.value }))} /></FormControl>
+              <FormControl><FormLabel>Descripción</FormLabel><Textarea value={taskForm.description} onChange={(e) => setTaskForm((f) => ({ ...f, description: e.target.value }))} rows={3} /></FormControl>
+              <FormControl><FormLabel>Fecha</FormLabel><Input type="date" value={taskForm.date} onChange={(e) => setTaskForm((f) => ({ ...f, date: e.target.value }))} /></FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onTaskClose}>Cancelar</Button>
+            <Button onClick={createTask} isDisabled={!taskForm.title} colorScheme="green">Crear Tarea</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -740,10 +913,11 @@ export default function Oposiciones() {
         <Tab><FiCheckCircle style={{ marginRight: 8 }} />Tests</Tab>
         <Tab><FiEdit style={{ marginRight: 8 }} />Supuestos Prácticos</Tab>
         <Tab><FiAward style={{ marginRight: 8 }} />Simulacros</Tab>
+        <Tab><FiGrid style={{ marginRight: 8 }} />Pizarra</Tab>
         <Tab><FiBarChart2 style={{ marginRight: 8 }} />Estadísticas</Tab>
       </TabList>
       <TabPanels>
-        <TabPanel px={0}><ConvocatoriaForm /></TabPanel>
+        <TabPanel px={0}><ConvocatoriaManager /></TabPanel>
         <TabPanel px={0}>
           <VStack spacing={6} align="stretch">
             <Cronometro onRegister={handleStudyRegister} />
@@ -753,6 +927,7 @@ export default function Oposiciones() {
         <TabPanel px={0}><TestManager /></TabPanel>
         <TabPanel px={0}><SupuestosPracticosManager /></TabPanel>
         <TabPanel px={0}><SimulacrosManager /></TabPanel>
+        <TabPanel px={0}><PizarraManager /></TabPanel>
         <TabPanel px={0}><EstadisticasOposiciones /></TabPanel>
       </TabPanels>
     </Tabs>

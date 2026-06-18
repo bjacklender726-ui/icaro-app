@@ -31,8 +31,8 @@ const getDataKey = (userId) => `${DATA_PREFIX}${userId}`;
 
 const getDefaultData = () => ({
   agendaTasks: [], temarios: [], studySessions: [], tests: [], testResults: [],
-  convocatoria: { nombre: '', organismo: '', plazoInscripcionInicio: '', plazoInscripcionFin: '', inscrito: false, fechaAdmitidos: '', listasProvisionales: '', fechaExamen: '', lugarExamen: '', tasa: '', mediasAprobar: '', numeroPlazas: '', notas: '' },
-  supuestosPracticos: [], simulacros: [],
+  convocatoria: [],
+  supuestosPracticos: [], simulacros: [], oposicionesPizarra: [], proyectosPizarra: [],
   jobOffers: [], gymRoutines: [], gymSessions: [], gymGoals: [],
   projects: [], projectLogs: [], automations: [],
   notifications: [], xp: 0, level: 1, badges: [], dailyMissions: [],
@@ -470,7 +470,17 @@ const useStore = create((set, get) => {
 
     addTestResult: (result) => { set((s) => ({ testResults: [...s.testResults, { ...result, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
 
-    updateConvocatoria: (data) => { set((s) => ({ convocatoria: { ...s.convocatoria, ...data } })); setTimeout(saveCurrentUserData, 0); },
+    addConvocatoria: (c) => { set((s) => ({ convocatoria: [...s.convocatoria, { ...c, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
+    updateConvocatoria: (id, data) => { set((s) => ({ convocatoria: s.convocatoria.map((c) => (c.id === id ? { ...c, ...data } : c)) })); setTimeout(saveCurrentUserData, 0); },
+    deleteConvocatoria: (id) => { set((s) => ({ convocatoria: s.convocatoria.filter((c) => c.id !== id) })); setTimeout(saveCurrentUserData, 0); },
+
+    addOposicionesPizarraItem: (item) => { set((s) => ({ oposicionesPizarra: [...s.oposicionesPizarra, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
+    updateOposicionesPizarraItem: (id, data) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
+    deleteOposicionesPizarraItem: (id) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
+
+    addProyectosPizarraItem: (item) => { set((s) => ({ proyectosPizarra: [...s.proyectosPizarra, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
+    updateProyectosPizarraItem: (id, data) => { set((s) => ({ proyectosPizarra: s.proyectosPizarra.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
+    deleteProyectosPizarraItem: (id) => { set((s) => ({ proyectosPizarra: s.proyectosPizarra.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
 
     addSupuestoPractico: (s) => { set((state) => ({ supuestosPracticos: [...state.supuestosPracticos, { ...s, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
     updateSupuestoPractico: (id, data) => { set((s) => ({ supuestosPracticos: s.supuestosPracticos.map((sp) => (sp.id === id ? { ...sp, ...data } : sp)) })); setTimeout(saveCurrentUserData, 0); },
@@ -524,7 +534,7 @@ const useStore = create((set, get) => {
       const state = get();
       const backup = {
         id: uuidv4(), name: name || `Backup ${new Date().toLocaleString('es')}`, date: new Date().toISOString(),
-        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, automations: state.automations, xp: state.xp, level: state.level, badges: state.badges },
+        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, proyectosPizarra: state.proyectosPizarra, xp: state.xp, level: state.level, badges: state.badges },
       };
       set((s) => ({ backups: [backup, ...s.backups] }));
       setTimeout(saveCurrentUserData, 0);
@@ -535,7 +545,7 @@ const useStore = create((set, get) => {
       const backup = state.backups.find((b) => b.id === backupId);
       if (backup && backup.data) {
         set({
-          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || {}, jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], automations: backup.data.automations || [], xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [],
+          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || [], proyectosPizarra: backup.data.proyectosPizarra || [], xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [],
         });
         setTimeout(saveCurrentUserData, 0);
       }
@@ -545,10 +555,10 @@ const useStore = create((set, get) => {
     clearSection: (section) => {
       const resets = {
         agenda: { agendaTasks: [] },
-        oposiciones: { temarios: [], studySessions: [], tests: [], testResults: [], supuestosPracticos: [], simulacros: [], convocatoria: { nombre: '', organismo: '', plazoInscripcionInicio: '', plazoInscripcionFin: '', inscrito: false, fechaAdmitidos: '', listasProvisionales: '', fechaExamen: '', lugarExamen: '', tasa: '', mediasAprobar: '', numeroPlazas: '', notas: '' } },
+        oposiciones: { temarios: [], studySessions: [], tests: [], testResults: [], supuestosPracticos: [], simulacros: [], convocatoria: [], oposicionesPizarra: [] },
         trabajo: { jobOffers: [] },
         gym: { gymRoutines: [], gymSessions: [], gymGoals: [] },
-        proyectos: { projects: [], projectLogs: [] },
+        proyectos: { projects: [], projectLogs: [], proyectosPizarra: [] },
         automatizaciones: { automations: [] },
       };
       if (resets[section]) { set(resets[section]); setTimeout(saveCurrentUserData, 0); }

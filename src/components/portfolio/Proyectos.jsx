@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Progress, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel, Wrap, WrapItem, Tag, Collapse } from '@chakra-ui/react';
-import { FiPlus, FiTrash2, FiEdit3, FiGrid, FiClock, FiChevronDown, FiChevronRight, FiTrendingUp } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit3, FiGrid, FiClock, FiChevronDown, FiChevronRight, FiTrendingUp, FiLink, FiImage, FiVideo, FiFileText } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import useStore from '../../store/useStore';
 import { formatDate } from '../../utils/helpers';
@@ -276,6 +276,153 @@ function ProjectStats() {
   );
 }
 
+function PizarraProyectos() {
+  const { proyectosPizarra, addProyectosPizarraItem, updateProyectosPizarraItem, deleteProyectosPizarraItem, addAgendaTask } = useStore();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isTaskOpen, onOpen: onTaskOpen, onClose: onTaskClose } = useDisclosure();
+  const [form, setForm] = useState({ type: 'text', title: '', content: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', date: format(new Date(), 'yyyy-MM-dd') });
+  const [taskSourceItem, setTaskSourceItem] = useState(null);
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const cardBg = useColorModeValue('gray.50', 'gray.700');
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'link': return <FiLink />;
+      case 'youtube': return <FiVideo />;
+      case 'image': return <FiImage />;
+      default: return <FiFileText />;
+    }
+  };
+
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'link': return 'blue';
+      case 'youtube': return 'red';
+      case 'image': return 'green';
+      default: return 'gray';
+    }
+  };
+
+  const extractYouTubeId = (url) => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
+    return match ? match[1] : null;
+  };
+
+  const saveItem = () => {
+    if (form.id) updateProyectosPizarraItem(form.id, form);
+    else addProyectosPizarraItem(form);
+    setForm({ type: 'text', title: '', content: '' });
+    onClose();
+  };
+
+  const openEdit = (item) => { setForm({ ...item }); onOpen(); };
+
+  const openCreateTask = (item) => {
+    setTaskSourceItem(item);
+    setTaskForm({ title: item.title || '', description: '', date: format(new Date(), 'yyyy-MM-dd') });
+    onTaskOpen();
+  };
+
+  const createTask = () => {
+    addAgendaTask({ title: taskForm.title, description: taskForm.description, date: taskForm.date, completed: false, section: 'proyectos', type: 'task' });
+    onTaskClose();
+    setTaskSourceItem(null);
+  };
+
+  const renderContent = (item) => {
+    if (item.type === 'youtube') {
+      const videoId = extractYouTubeId(item.content);
+      return videoId ? (
+        <Box borderRadius="md" overflow="hidden" mt={2}>
+          <iframe width="100%" height="200" src={`https://www.youtube.com/embed/${videoId}`} title={item.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        </Box>
+      ) : <Text fontSize="sm" color="red.400">URL de YouTube no válida</Text>;
+    }
+    if (item.type === 'image') {
+      return <Box mt={2}><img src={item.content} alt={item.title} style={{ maxWidth: '100%', borderRadius: 8, maxHeight: 300, objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} /></Box>;
+    }
+    if (item.type === 'link') {
+      return <Button as="a" href={item.content} target="_blank" size="sm" variant="link" colorScheme="blue" mt={2} leftIcon={<FiLink />}>{item.content}</Button>;
+    }
+    return <Text fontSize="sm" mt={2} whiteSpace="pre-wrap">{item.content}</Text>;
+  };
+
+  return (
+    <Box>
+      <Flex justify="space-between" mb={4}>
+        <Text fontWeight="bold">Pizarra de Proyectos</Text>
+        <Button leftIcon={<FiPlus />} size="sm" onClick={() => { setForm({ type: 'text', title: '', content: '' }); onOpen(); }}>Nuevo elemento</Button>
+      </Flex>
+      {proyectosPizarra.length === 0 && <Text color="gray.500" textAlign="center" py={8}>Pizarra vacía. Añade notas, enlaces, imágenes o vídeos de YouTube.</Text>}
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+        {proyectosPizarra.map((item) => (
+          <Box key={item.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+            <HStack justify="space-between" mb={2}>
+              <HStack spacing={2}>
+                <Badge colorScheme={getTypeColor(item.type)} leftIcon={getTypeIcon(item.type)}>{item.type}</Badge>
+                <Text fontWeight="bold" fontSize="sm">{item.title}</Text>
+              </HStack>
+              <HStack spacing={1}>
+                <IconButton icon={<FiEdit3 />} size="xs" variant="ghost" onClick={() => openEdit(item)} />
+                <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" onClick={() => deleteProyectosPizarraItem(item.id)} />
+              </HStack>
+            </HStack>
+            {renderContent(item)}
+            <Button size="xs" colorScheme="purple" mt={3} leftIcon={<FiPlus />} onClick={() => openCreateTask(item)}>Crear tarea en Agenda</Button>
+          </Box>
+        ))}
+      </SimpleGrid>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{form.id ? 'Editar elemento' : 'Nuevo elemento'}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl><FormLabel>Tipo</FormLabel><Select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
+                <option value="text">Nota de texto</option>
+                <option value="link">Enlace web</option>
+                <option value="youtube">YouTube</option>
+                <option value="image">Imagen</option>
+              </Select></FormControl>
+              <FormControl><FormLabel>Título</FormLabel><Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} /></FormControl>
+              <FormControl><FormLabel>{form.type === 'youtube' ? 'URL del vídeo' : form.type === 'image' ? 'URL de la imagen' : form.type === 'link' ? 'URL del enlace' : 'Contenido'}</FormLabel>
+                {form.type === 'text' ? <Textarea value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} rows={6} /> : <Input value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} placeholder={form.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' : form.type === 'image' ? 'https://ejemplo.com/imagen.jpg' : 'https://...'} />}
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
+            <Button onClick={saveItem} isDisabled={!form.title}>{form.id ? 'Guardar' : 'Crear'}</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isTaskOpen} onClose={onTaskClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Crear tarea en Agenda</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl><FormLabel>Título</FormLabel><Input value={taskForm.title} onChange={(e) => setTaskForm((f) => ({ ...f, title: e.target.value }))} /></FormControl>
+              <FormControl><FormLabel>Descripción</FormLabel><Textarea value={taskForm.description} onChange={(e) => setTaskForm((f) => ({ ...f, description: e.target.value }))} rows={3} /></FormControl>
+              <FormControl><FormLabel>Fecha</FormLabel><Input type="date" value={taskForm.date} onChange={(e) => setTaskForm((f) => ({ ...f, date: e.target.value }))} /></FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onTaskClose}>Cancelar</Button>
+            <Button onClick={createTask} isDisabled={!taskForm.title} colorScheme="purple">Crear tarea</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
+  );
+}
+
 export default function Proyectos() {
   return (
     <Tabs variant="enclosed" colorScheme="purple">
@@ -283,11 +430,13 @@ export default function Proyectos() {
         <Tab><FiGrid style={{ marginRight: 8 }} />Proyectos</Tab>
         <Tab><FiClock style={{ marginRight: 8 }} />Registrar Horas</Tab>
         <Tab><FiTrendingUp style={{ marginRight: 8 }} />Estadísticas</Tab>
+        <Tab><FiFileText style={{ marginRight: 8 }} />Pizarra</Tab>
       </TabList>
       <TabPanels>
         <TabPanel px={0}><ProjectManager /></TabPanel>
         <TabPanel px={0}><LogHours /></TabPanel>
         <TabPanel px={0}><ProjectStats /></TabPanel>
+        <TabPanel px={0}><PizarraProyectos /></TabPanel>
       </TabPanels>
     </Tabs>
   );
