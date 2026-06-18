@@ -29,12 +29,32 @@ const saveJSON = (key, data) => {
 
 const getDataKey = (userId) => `${DATA_PREFIX}${userId}`;
 
+const migrateUserData = (data) => {
+  if (!data || typeof data !== 'object') return data;
+  const toArr = (val) => {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object') {
+      const hasData = Object.values(val).some((v) => v !== null && v !== undefined && v !== '' && v !== 0 && v !== false);
+      return hasData ? [{ ...val, id: 'migrated-' + Date.now(), createdAt: new Date().toISOString() }] : [];
+    }
+    return [];
+  };
+  const result = { ...data, convocatoria: toArr(data.convocatoria), oposicionesPizarra: toArr(data.oposicionesPizarra) };
+  if (data.proyectosPizarra && !data.projectPizarras) {
+    result.projectPizarras = { general: toArr(data.proyectosPizarra) };
+  } else {
+    result.projectPizarras = data.projectPizarras || {};
+  }
+  delete result.proyectosPizarra;
+  return result;
+};
+
 const getDefaultData = () => ({
   agendaTasks: [], temarios: [], studySessions: [], tests: [], testResults: [],
   convocatoria: [],
-  supuestosPracticos: [], simulacros: [], oposicionesPizarra: [], proyectosPizarra: [],
+  supuestosPracticos: [], simulacros: [], oposicionesPizarra: [],
   jobOffers: [], gymRoutines: [], gymSessions: [], gymGoals: [],
-  projects: [], projectLogs: [], automations: [],
+  projects: [], projectLogs: [], projectPizarras: {}, automations: [],
   notifications: [], xp: 0, level: 1, badges: [], dailyMissions: [],
   backups: [], focusMode: false, pomodoroActive: false, pomodoroMinutes: 25,
 });
@@ -128,12 +148,13 @@ const sb = {
 
 const useStore = create((set, get) => {
   const loadUserData = async (userId) => {
+    let data;
     if (isSupabaseConfigured()) {
-      const data = await sb.getUserData(userId);
-      return data || getDefaultData();
+      data = await sb.getUserData(userId);
+    } else {
+      data = loadJSON(getDataKey(userId));
     }
-    const saved = loadJSON(getDataKey(userId));
-    return saved || getDefaultData();
+    return migrateUserData(data || getDefaultData());
   };
 
   const saveUserData = async (userId, data) => {
@@ -219,7 +240,7 @@ const useStore = create((set, get) => {
         const authData = loadJSON(AUTH_KEY);
         const found = authData?.users?.find(u => u.id === session.userId && u.status === 'active');
         if (found) {
-          const userData = loadJSON(getDataKey(found.id)) || getDefaultData();
+          const userData = await loadUserData(found.id);
           set({
             ...userData,
             user: { id: found.id, username: found.username, name: found.name, email: found.email, role: found.role },
@@ -478,9 +499,9 @@ const useStore = create((set, get) => {
     updateOposicionesPizarraItem: (id, data) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
     deleteOposicionesPizarraItem: (id) => { set((s) => ({ oposicionesPizarra: s.oposicionesPizarra.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
 
-    addProyectosPizarraItem: (item) => { set((s) => ({ proyectosPizarra: [...s.proyectosPizarra, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
-    updateProyectosPizarraItem: (id, data) => { set((s) => ({ proyectosPizarra: s.proyectosPizarra.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
-    deleteProyectosPizarraItem: (id) => { set((s) => ({ proyectosPizarra: s.proyectosPizarra.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
+    addProyectosPizarraItem: (projectId, item) => { set((s) => { const board = s.projectPizarras[projectId] || []; return { projectPizarras: { ...s.projectPizarras, [projectId]: [...board, { ...item, id: uuidv4(), createdAt: new Date().toISOString() }] } }; }); setTimeout(saveCurrentUserData, 0); },
+    updateProyectosPizarraItem: (projectId, id, data) => { set((s) => { const board = s.projectPizarras[projectId] || []; return { projectPizarras: { ...s.projectPizarras, [projectId]: board.map((p) => (p.id === id ? { ...p, ...data } : p)) } }; }); setTimeout(saveCurrentUserData, 0); },
+    deleteProyectosPizarraItem: (projectId, id) => { set((s) => { const board = s.projectPizarras[projectId] || []; return { projectPizarras: { ...s.projectPizarras, [projectId]: board.filter((p) => p.id !== id) } }; }); setTimeout(saveCurrentUserData, 0); },
 
     addSupuestoPractico: (s) => { set((state) => ({ supuestosPracticos: [...state.supuestosPracticos, { ...s, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
     updateSupuestoPractico: (id, data) => { set((s) => ({ supuestosPracticos: s.supuestosPracticos.map((sp) => (sp.id === id ? { ...sp, ...data } : sp)) })); setTimeout(saveCurrentUserData, 0); },
@@ -534,7 +555,7 @@ const useStore = create((set, get) => {
       const state = get();
       const backup = {
         id: uuidv4(), name: name || `Backup ${new Date().toLocaleString('es')}`, date: new Date().toISOString(),
-        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, proyectosPizarra: state.proyectosPizarra, xp: state.xp, level: state.level, badges: state.badges },
+        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, projectPizarras: state.projectPizarras, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, xp: state.xp, level: state.level, badges: state.badges },
       };
       set((s) => ({ backups: [backup, ...s.backups] }));
       setTimeout(saveCurrentUserData, 0);
@@ -545,7 +566,7 @@ const useStore = create((set, get) => {
       const backup = state.backups.find((b) => b.id === backupId);
       if (backup && backup.data) {
         set({
-          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || [], proyectosPizarra: backup.data.proyectosPizarra || [], xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [],
+          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], projectPizarras: backup.data.projectPizarras || {}, automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || [], xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [],
         });
         setTimeout(saveCurrentUserData, 0);
       }
@@ -558,7 +579,7 @@ const useStore = create((set, get) => {
         oposiciones: { temarios: [], studySessions: [], tests: [], testResults: [], supuestosPracticos: [], simulacros: [], convocatoria: [], oposicionesPizarra: [] },
         trabajo: { jobOffers: [] },
         gym: { gymRoutines: [], gymSessions: [], gymGoals: [] },
-        proyectos: { projects: [], projectLogs: [], proyectosPizarra: [] },
+        proyectos: { projects: [], projectLogs: [], projectPizarras: {} },
         automatizaciones: { automations: [] },
       };
       if (resets[section]) { set(resets[section]); setTimeout(saveCurrentUserData, 0); }

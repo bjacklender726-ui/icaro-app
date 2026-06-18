@@ -56,6 +56,19 @@ export default function Agenda() {
     return eachDayOfInterval({ start, end });
   }, [selectedDate]);
 
+  const monthWeeks = useMemo(() => {
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    const allDays = eachDayOfInterval({ start: calStart, end: calEnd });
+    const weeks = [];
+    for (let i = 0; i < allDays.length; i += 7) {
+      weeks.push(allDays.slice(i, i + 7));
+    }
+    return weeks;
+  }, [selectedDate]);
+
   const getDaySummary = (date) => {
     const d = format(date, 'yyyy-MM-dd');
     const study = studySessions.filter((s) => s.date === d);
@@ -144,7 +157,7 @@ export default function Agenda() {
 
   const getTaskPosition = (hour) => {
     const [h, m] = (hour || '08:00').split(':').map(Number);
-    return (h - 6) * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
+    return h * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
   };
 
   const getTaskHeight = (hour, hourEnd) => {
@@ -153,7 +166,7 @@ export default function Agenda() {
     return Math.max(((h2 * 60 + m2) - (h1 * 60 + m1)) / 60 * HOUR_HEIGHT, 25);
   };
 
-  const HOURS = Array.from({ length: 18 }, (_, i) => i + 6);
+  const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
   return (
     <Box>
@@ -244,14 +257,12 @@ export default function Agenda() {
               const now = new Date();
               const h = now.getHours();
               const m = now.getMinutes();
-              if (h >= 6 && h < 24) {
-                const top = (h - 6) * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
-                return (
-                  <Box position="absolute" top={`${top}px`} left={0} right={0} h="2px" bg="red.500" zIndex={10}>
-                    <Box position="absolute" left="-5px" top="-4px" w="10px" h="10px" bg="red.500" borderRadius="full" />
-                  </Box>
-                );
-              }
+              const top = h * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
+              return (
+                <Box position="absolute" top={`${top}px`} left={0} right={0} h="2px" bg="red.500" zIndex={10}>
+                  <Box position="absolute" left="-5px" top="-4px" w="10px" h="10px" bg="red.500" borderRadius="full" />
+                </Box>
+              );
             })()}
           </Box>
 
@@ -333,29 +344,43 @@ export default function Agenda() {
               <Text key={d} textAlign="center" fontSize="xs" fontWeight="bold" color="gray.500" py={1}>{d}</Text>
             ))}
           </Grid>
-          <Grid templateColumns="repeat(7, 1fr)" gap={1}>
-            {Array.from({ length: (startOfMonth(selectedDate).getDay() + 6) % 7 }).map((_, i) => <Box key={`empty-${i}`} />)}
-            {monthDays.map((d) => {
-              const summary = getDaySummary(d);
-              const today = isToday(d);
-              const hasData = summary.studyMin > 0 || summary.gymCount > 0 || summary.offerCount > 0 || summary.projectHours > 0;
+          <VStack spacing={1} align="stretch">
+            {monthWeeks.map((week, wi) => {
+              const currentWeek = week.some(d => isToday(d));
               return (
-                <Box key={d.toISOString()} p={1.5} bg={today ? todayBg : hasData ? hasDataBg : 'transparent'}
-                  borderRadius="lg" cursor="pointer"
-                  border={today ? '2px solid' : '1px solid'} borderColor={today ? 'blue.400' : 'transparent'}
-                  _hover={{ bg: cellHoverBg }} onClick={() => { setSelectedDate(d); setViewMode('day'); }} minH="60px">
-                  <Text fontSize="xs" fontWeight={today ? 'bold' : 'normal'} color={today ? 'blue.500' : 'inherit'}>
-                    {format(d, 'd')}
-                  </Text>
-                  {summary.studyMin > 0 && <Text fontSize="xs" color="blue.500">📚</Text>}
-                  {summary.gymCount > 0 && <Text fontSize="xs" color="red.500">🏋️</Text>}
-                  {summary.offerCount > 0 && <Text fontSize="xs" color="orange.500">💼</Text>}
-                  {summary.projectHours > 0 && <Text fontSize="xs" color="purple.500">💻</Text>}
-                  {summary.taskCount > 0 && <Badge colorScheme="green" fontSize="xs" mt={1}>{summary.taskCompleted}/{summary.taskCount}</Badge>}
-                </Box>
+                <Grid key={wi} templateColumns="repeat(7, 1fr)" gap={1}
+                  bg={currentWeek ? todayBg : 'transparent'}
+                  borderRadius="md" p={currentWeek ? 1 : 0}>
+                  {week.map((d) => {
+                    const inMonth = d.getMonth() === selectedDate.getMonth();
+                    const summary = getDaySummary(d);
+                    const today = isToday(d);
+                    const hasData = summary.studyMin > 0 || summary.gymCount > 0 || summary.offerCount > 0 || summary.projectHours > 0;
+                    return (
+                      <Box key={d.toISOString()} p={1.5}
+                        bg={today ? todayBg : hasData ? hasDataBg : 'transparent'}
+                        borderRadius="lg" cursor="pointer"
+                        border={today ? '2px solid' : '1px solid'}
+                        borderColor={today ? 'blue.400' : 'transparent'}
+                        opacity={inMonth ? 1 : 0.35}
+                        _hover={{ bg: cellHoverBg }}
+                        onClick={() => { setSelectedDate(d); setViewMode('day'); }}
+                        minH="60px">
+                        <Text fontSize="xs" fontWeight={today ? 'bold' : 'normal'} color={today ? 'blue.500' : 'inherit'}>
+                          {format(d, 'd')}
+                        </Text>
+                        {summary.studyMin > 0 && <Text fontSize="xs" color="blue.500">📚</Text>}
+                        {summary.gymCount > 0 && <Text fontSize="xs" color="red.500">🏋️</Text>}
+                        {summary.offerCount > 0 && <Text fontSize="xs" color="orange.500">💼</Text>}
+                        {summary.projectHours > 0 && <Text fontSize="xs" color="purple.500">💻</Text>}
+                        {summary.taskCount > 0 && <Badge colorScheme="green" fontSize="xs" mt={1}>{summary.taskCompleted}/{summary.taskCount}</Badge>}
+                      </Box>
+                    );
+                  })}
+                </Grid>
               );
             })}
-          </Grid>
+          </VStack>
         </Box>
       )}
 
