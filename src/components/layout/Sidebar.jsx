@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Flex, Text, Icon, VStack, HStack, Badge, Avatar, useColorMode, useColorModeValue, Tooltip, IconButton } from '@chakra-ui/react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { FiHome, FiCalendar, FiBook, FiBriefcase, FiActivity, FiGrid, FiBarChart2, FiZap, FiSettings, FiMoon, FiSun, FiBell, FiLogOut, FiUsers } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiBook, FiBriefcase, FiActivity, FiGrid, FiBarChart2, FiZap, FiSettings, FiMoon, FiSun, FiBell, FiLogOut, FiUsers, FiAward } from 'react-icons/fi';
 import useStore from '../../store/useStore';
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { id: 'trabajo', path: '/trabajo', label: 'Trabajo', icon: FiBriefcase, color: 'trabajo.500' },
   { id: 'gym', path: '/gym', label: 'Gimnasio', icon: FiActivity, color: 'gym.500' },
   { id: 'proyectos', path: '/proyectos', label: 'Proyectos', icon: FiGrid, color: 'portfolio.500' },
+  { id: 'formacion', path: '/formacion', label: 'Formación', icon: FiAward, color: 'teal.500' },
   { id: 'estadisticas', path: '/estadisticas', label: 'Estadísticas', icon: FiBarChart2, color: 'cyan.500' },
   { id: 'automatizaciones', path: '/automatizaciones', label: 'Automatizaciones', icon: FiZap, color: 'yellow.500' },
   { id: 'gamificacion', path: '/gamificacion', label: 'Gamificación', icon: FiSettings, color: 'pink.500' },

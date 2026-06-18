@@ -71,6 +71,7 @@ const getDefaultData = () => ({
   projects: [], projectLogs: [], projectPizarras: {}, automations: [],
   notifications: [], xp: 0, level: 1, badges: [], dailyMissions: [],
   backups: [], focusMode: false, pomodoroActive: false, pomodoroMinutes: 25, hiddenModules: [],
+  formacionCerts: [], formacionPlans: [],
 });
 
 const DATA_FIELDS = Object.keys(getDefaultData());
@@ -708,6 +709,19 @@ const useStore = create((set, get) => {
       });
       setTimeout(saveCurrentUserData, 0);
     },
+    clearProjectBoard: (projectId, boardId) => {
+      set((s) => {
+        const boards = s.projectPizarras[projectId] || {};
+        const board = boards[boardId] || { name: '', items: [] };
+        return {
+          projectPizarras: {
+            ...s.projectPizarras,
+            [projectId]: { ...boards, [boardId]: { ...board, items: [] } }
+          }
+        };
+      });
+      setTimeout(saveCurrentUserData, 0);
+    },
 
     addSupuestoPractico: (s) => { set((state) => ({ supuestosPracticos: [...state.supuestosPracticos, { ...s, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
     updateSupuestoPractico: (id, data) => { set((s) => ({ supuestosPracticos: s.supuestosPracticos.map((sp) => (sp.id === id ? { ...sp, ...data } : sp)) })); setTimeout(saveCurrentUserData, 0); },
@@ -776,6 +790,14 @@ const useStore = create((set, get) => {
     updateAutomation: (id, data) => { set((s) => ({ automations: s.automations.map((a) => (a.id === id ? { ...a, ...data } : a)) })); setTimeout(saveCurrentUserData, 0); },
     deleteAutomation: (id) => { set((s) => ({ automations: s.automations.filter((a) => a.id !== id) })); setTimeout(saveCurrentUserData, 0); },
 
+    addFormacionCert: (c) => { set((s) => ({ formacionCerts: [...s.formacionCerts, { ...c, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
+    updateFormacionCert: (id, data) => { set((s) => ({ formacionCerts: s.formacionCerts.map((c) => (c.id === id ? { ...c, ...data } : c)) })); setTimeout(saveCurrentUserData, 0); },
+    removeFormacionCert: (id) => { set((s) => ({ formacionCerts: s.formacionCerts.filter((c) => c.id !== id) })); setTimeout(saveCurrentUserData, 0); },
+
+    addFormacionPlan: (p) => { set((s) => ({ formacionPlans: [...s.formacionPlans, { ...p, id: uuidv4(), createdAt: new Date().toISOString() }] })); setTimeout(saveCurrentUserData, 0); },
+    updateFormacionPlan: (id, data) => { set((s) => ({ formacionPlans: s.formacionPlans.map((p) => (p.id === id ? { ...p, ...data } : p)) })); setTimeout(saveCurrentUserData, 0); },
+    removeFormacionPlan: (id) => { set((s) => ({ formacionPlans: s.formacionPlans.filter((p) => p.id !== id) })); setTimeout(saveCurrentUserData, 0); },
+
     toggleFocusMode: () => { set((s) => ({ focusMode: !s.focusMode })); setTimeout(saveCurrentUserData, 0); },
     setPomodoro: (min) => { set({ pomodoroMinutes: min }); setTimeout(saveCurrentUserData, 0); },
     togglePomodoro: () => { set((s) => ({ pomodoroActive: !s.pomodoroActive })); setTimeout(saveCurrentUserData, 0); },
@@ -792,7 +814,7 @@ const useStore = create((set, get) => {
       const state = get();
       const backup = {
         id: uuidv4(), name: name || `Backup ${new Date().toLocaleString('es')}`, date: new Date().toISOString(),
-        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, projectPizarras: state.projectPizarras, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, oposicionesKanbans: state.oposicionesKanbans, xp: state.xp, level: state.level, badges: state.badges, hiddenModules: state.hiddenModules },
+        data: { agendaTasks: state.agendaTasks, temarios: state.temarios, studySessions: state.studySessions, tests: state.tests, testResults: state.testResults, supuestosPracticos: state.supuestosPracticos, simulacros: state.simulacros, convocatoria: state.convocatoria, jobOffers: state.jobOffers, gymRoutines: state.gymRoutines, gymSessions: state.gymSessions, gymGoals: state.gymGoals, projects: state.projects, projectLogs: state.projectLogs, projectPizarras: state.projectPizarras, automations: state.automations, oposicionesPizarra: state.oposicionesPizarra, oposicionesKanbans: state.oposicionesKanbans, xp: state.xp, level: state.level, badges: state.badges, hiddenModules: state.hiddenModules, formacionCerts: state.formacionCerts, formacionPlans: state.formacionPlans },
       };
       set((s) => ({ backups: [backup, ...s.backups] }));
       setTimeout(saveCurrentUserData, 0);
@@ -803,7 +825,7 @@ const useStore = create((set, get) => {
       const backup = state.backups.find((b) => b.id === backupId);
       if (backup && backup.data) {
         set({
-          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], projectPizarras: backup.data.projectPizarras || {}, automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || {}, oposicionesKanbans: backup.data.oposicionesKanbans || {}, xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [], hiddenModules: backup.data.hiddenModules || [],
+          agendaTasks: backup.data.agendaTasks || [], temarios: backup.data.temarios || [], studySessions: backup.data.studySessions || [], tests: backup.data.tests || [], testResults: backup.data.testResults || [], supuestosPracticos: backup.data.supuestosPracticos || [], simulacros: backup.data.simulacros || [], convocatoria: backup.data.convocatoria || [], jobOffers: backup.data.jobOffers || [], gymRoutines: backup.data.gymRoutines || [], gymSessions: backup.data.gymSessions || [], gymGoals: backup.data.gymGoals || [], projects: backup.data.projects || [], projectLogs: backup.data.projectLogs || [], projectPizarras: backup.data.projectPizarras || {}, automations: backup.data.automations || [], oposicionesPizarra: backup.data.oposicionesPizarra || {}, oposicionesKanbans: backup.data.oposicionesKanbans || {}, xp: backup.data.xp || 0, level: backup.data.level || 1, badges: backup.data.badges || [], hiddenModules: backup.data.hiddenModules || [], formacionCerts: backup.data.formacionCerts || [], formacionPlans: backup.data.formacionPlans || [],
         });
         setTimeout(saveCurrentUserData, 0);
       }
@@ -818,6 +840,7 @@ const useStore = create((set, get) => {
         gym: { gymRoutines: [], gymSessions: [], gymGoals: [] },
         proyectos: { projects: [], projectLogs: [], projectPizarras: {} },
         automatizaciones: { automations: [] },
+        formacion: { formacionCerts: [], formacionPlans: [] },
       };
       if (resets[section]) { set(resets[section]); setTimeout(saveCurrentUserData, 0); }
     },

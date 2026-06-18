@@ -934,7 +934,7 @@ function PizarraProyectos({ projectId }) {
   const currentBoard = projectPizarras[selectedBoardId];
   const board = currentBoard?.items || [];
   const project = store.projects.find((p) => p.id === projectId);
-  const { addProyectosPizarraItem, updateProyectosPizarraItem, deleteProyectosPizarraItem, addProjectBoard, deleteProjectBoard, renameProjectBoard, updateProject, addAgendaTask } = store;
+  const { addProyectosPizarraItem, updateProyectosPizarraItem, deleteProyectosPizarraItem, addProjectBoard, deleteProjectBoard, renameProjectBoard, clearProjectBoard, updateProject, addAgendaTask } = store;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isTaskOpen, onOpen: onTaskOpen, onClose: onTaskClose } = useDisclosure();
   const { isOpen: isBoardOpen, onOpen: onBoardOpen, onClose: onBoardClose } = useDisclosure();
@@ -952,8 +952,10 @@ function PizarraProyectos({ projectId }) {
   useEffect(() => {
     if (boardIds.length > 0 && !boardIds.includes(selectedBoardId)) {
       setSelectedBoardId(boardIds[0]);
+    } else if (boardIds.length === 0) {
+      setSelectedBoardId('');
     }
-  }, [boardIds, selectedBoardId]);
+  }, [store.projectPizarras, projectId]);
 
   const completedTasks = (project?.tasks || []).filter((t) => t.completed).length;
   const totalTasks = (project?.tasks || []).length;
@@ -1025,7 +1027,7 @@ function PizarraProyectos({ projectId }) {
 
   const clearBoard = () => {
     if (!selectedBoardId) return;
-    board.forEach(item => deleteProyectosPizarraItem(projectId, selectedBoardId, item.id));
+    clearProjectBoard(projectId, selectedBoardId);
   };
 
   const handleCreateBoard = () => {
@@ -1038,6 +1040,8 @@ function PizarraProyectos({ projectId }) {
 
   const handleDeleteBoard = (bid) => {
     deleteProjectBoard(projectId, bid);
+    const remaining = boardIds.filter(b => b !== bid);
+    setSelectedBoardId(remaining[0] || '');
   };
 
   const startRenameBoard = (bid, currentName) => {
@@ -1115,7 +1119,7 @@ function PizarraProyectos({ projectId }) {
         {selectedBoardId && (
           <>
             <Button size="xs" variant="ghost" onClick={() => startRenameBoard(selectedBoardId, currentBoard?.name || '')}>Renombrar</Button>
-            <Button size="xs" variant="ghost" colorScheme="red" onClick={() => handleDeleteBoard(selectedBoardId)} isDisabled={boardIds.length <= 1}>Eliminar</Button>
+            <Button size="xs" variant="ghost" colorScheme="red" onClick={() => handleDeleteBoard(selectedBoardId)}>Eliminar</Button>
           </>
         )}
       </Flex>
@@ -1262,8 +1266,10 @@ function KanbanBoard({ projectId }) {
   useEffect(() => {
     if (kanbanBoardIds.length > 0 && !kanbanBoardIds.includes(selectedKbBoardId)) {
       setSelectedKbBoardId(kanbanBoardIds[0]);
+    } else if (kanbanBoardIds.length === 0) {
+      setSelectedKbBoardId('');
     }
-  }, [kanbanBoardIds, selectedKbBoardId]);
+  }, [project?.kanbanBoards]);
 
   const columns = [
     { id: 'pendiente', label: 'Pendiente', color: 'gray' },
@@ -1350,8 +1356,9 @@ function KanbanBoard({ projectId }) {
   };
 
   const clearBoard = () => {
-    if (!project) return;
-    updateProject(projectId, { tasks: [] });
+    if (!selectedKbBoardId) return;
+    const boards = project?.kanbanBoards || {};
+    updateProject(projectId, { kanbanBoards: { ...boards, [selectedKbBoardId]: { ...boards[selectedKbBoardId], assignments: {} } } });
   };
 
   const openEditTask = (task) => {
@@ -1428,7 +1435,11 @@ function KanbanBoard({ projectId }) {
         </Select>
         <Button size="xs" colorScheme="blue" onClick={onKbBoardOpen}>+ Tablero</Button>
         {selectedKbBoardId && (
-          <Button size="xs" variant="ghost" colorScheme="red" onClick={() => { deleteKanbanBoard(projectId, selectedKbBoardId); setSelectedKbBoardId(kanbanBoardIds.find(b => b !== selectedKbBoardId) || ''); }} isDisabled={kanbanBoardIds.length <= 1}>Eliminar</Button>
+          <Button size="xs" variant="ghost" colorScheme="red" onClick={() => {
+            deleteKanbanBoard(projectId, selectedKbBoardId);
+            const remaining = kanbanBoardIds.filter(b => b !== selectedKbBoardId);
+            setSelectedKbBoardId(remaining[0] || '');
+          }}>Eliminar</Button>
         )}
       </Flex>
 
