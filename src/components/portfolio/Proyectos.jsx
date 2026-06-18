@@ -1072,7 +1072,7 @@ function PizarraProyectos({ projectId }) {
           {board.map((item) => {
             const linkedItem = item.linkedTo ? board.find((b) => b.id === item.linkedTo) : null;
             return (
-              <Box key={item.id} position="absolute" left={`${item.position?.x || 0}px`} top={`${item.position?.y || 0}px`} w="240px" p={3} bg={bg} borderRadius="lg" boxShadow="md" border="1px solid" borderColor={borderColor} cursor="grab" zIndex={dragging === item.id ? 10 : 1} opacity={dragging === item.id ? 0.85 : 1} onMouseDown={(e) => handleMouseDown(e, item.id)}>
+              <Box key={item.id} position="absolute" left={`${item.position?.x || 0}px`} top={`${item.position?.y || 0}px`} w="240px" p={3} bg={bg} borderRadius="lg" boxShadow="md" border="1px solid" borderColor={borderColor} cursor="grab" zIndex={dragging === item.id ? 10 : 2} opacity={dragging === item.id ? 0.85 : 1} onMouseDown={(e) => handleMouseDown(e, item.id)}>
                 <HStack justify="space-between" mb={1}>
                   <Badge colorScheme={getTypeColor(item.type)} leftIcon={getTypeIcon(item.type)} fontSize="xs">{item.type}</Badge>
                   <HStack spacing={0}>
@@ -1087,6 +1087,23 @@ function PizarraProyectos({ projectId }) {
               </Box>
             );
           })}
+          <svg position="absolute" top="0" left="0" width="100%" height="100%" style={{ pointerEvents: 'none', zIndex: 0 }}>
+            {board.map((item) => {
+              if (!item.linkedTo) return null;
+              const target = board.find(b => b.id === item.linkedTo);
+              if (!target) return null;
+              const x1 = (item.position?.x || 0) + 120;
+              const y1 = (item.position?.y || 0) + 20;
+              const x2 = (target.position?.x || 0) + 120;
+              const y2 = (target.position?.y || 0) + 20;
+              return (
+                <g key={`link-${item.id}`}>
+                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#E53E3E" strokeWidth="2" strokeDasharray="6,3" />
+                  <circle cx={x2} cy={y2} r="5" fill="#E53E3E" />
+                </g>
+              );
+            })}
+          </svg>
         </Box>
       )}
 
@@ -1144,14 +1161,284 @@ function PizarraProyectos({ projectId }) {
   );
 }
 
+function KanbanBoard({ projectId }) {
+  const store = useStore();
+  const project = store.projects.find((p) => p.id === projectId);
+  const { updateProject, addAgendaTask, addNotification } = store;
+
+  const columns = [
+    { id: 'pendiente', label: 'Pendiente', color: 'gray' },
+    { id: 'progreso', label: 'En Progreso', color: 'blue' },
+    { id: 'revision', label: 'En Revisión', color: 'orange' },
+    { id: 'completado', label: 'Completado', color: 'green' },
+  ];
+
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newTaskForm, setNewTaskForm] = useState({ name: '', description: '', estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
+
+  const { isOpen: isTaskModalOpen, onOpen: onTaskModalOpen, onClose: onTaskModalClose } = useDisclosure();
+  const [editingTask, setEditingTask] = useState(null);
+  const [taskEditForm, setTaskEditForm] = useState({ name: '', description: '', estimatedHours: 1, startDate: '', endDate: '' });
+
+  const bg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const columnBg = useColorModeValue('gray.50', 'gray.750');
+  const cardBg = useColorModeValue('white', 'gray.800');
+
+  const getColumnTasks = (status) => {
+    return (project?.tasks || []).filter(t => (t.status || 'pendiente') === status);
+  };
+
+  const handleDragStart = (e, taskId) => {
+    setDraggedTask(taskId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, columnId) => {
+    e.preventDefault();
+    setDragOverColumn(columnId);
+  };
+
+  const handleDrop = (e, columnId) => {
+    e.preventDefault();
+    if (!draggedTask || !project) return;
+    const updatedTasks = project.tasks.map(t =>
+      t.id === draggedTask ? { ...t, status: columnId } : t
+    );
+    updateProject(projectId, { tasks: updatedTasks });
+
+    if (columnId === 'completado') {
+      const task = project.tasks.find(t => t.id === draggedTask);
+      if (task) {
+        addNotification({ title: 'Subtarea completada', message: `"${task.name}" completada en "${project.name}"`, type: 'success', section: 'proyectos' });
+      }
+    }
+
+    setDraggedTask(null);
+    setDragOverColumn(null);
+  };
+
+  const completedCount = getColumnTasks('completado').length;
+  const totalTasks = (project?.tasks || []).length;
+
+  const addTaskFromBoard = () => {
+    if (!newTaskForm.name || !project) return;
+    const newTask = {
+      id: Date.now().toString(),
+      name: newTaskForm.name,
+      description: newTaskForm.description,
+      completed: false,
+      status: 'pendiente',
+      estimatedHours: parseFloat(newTaskForm.estimatedHours) || 1,
+      startDate: newTaskForm.startDate || format(new Date(), 'yyyy-MM-dd'),
+      endDate: newTaskForm.endDate || '',
+    };
+    updateProject(projectId, { tasks: [...(project.tasks || []), newTask] });
+    setNewTaskForm({ name: '', description: '', estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
+    setIsAddOpen(false);
+  };
+
+  const openEditTask = (task) => {
+    setEditingTask(task);
+    setTaskEditForm({
+      name: task.name || '',
+      description: task.description || '',
+      estimatedHours: task.estimatedHours || 1,
+      startDate: task.startDate || '',
+      endDate: task.endDate || '',
+    });
+    onTaskModalOpen();
+  };
+
+  const saveTaskEdit = () => {
+    if (!editingTask || !project) return;
+    const updatedTasks = project.tasks.map(t =>
+      t.id === editingTask.id
+        ? {
+            ...t,
+            name: taskEditForm.name,
+            description: taskEditForm.description,
+            estimatedHours: parseFloat(taskEditForm.estimatedHours) || 0,
+            startDate: taskEditForm.startDate,
+            endDate: taskEditForm.endDate,
+          }
+        : t
+    );
+    updateProject(projectId, { tasks: updatedTasks });
+    onTaskModalClose();
+    setEditingTask(null);
+  };
+
+  const handleTaskEditFieldChange = (field, value) => {
+    setTaskEditForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if ((field === 'startDate' || field === 'estimatedHours') && next.startDate && next.estimatedHours > 0) {
+        const days = Math.ceil(next.estimatedHours / 8);
+        const start = new Date(next.startDate);
+        const end = addDays(start, days);
+        next.endDate = format(end, 'yyyy-MM-dd');
+      }
+      return next;
+    });
+  };
+
+  return (
+    <Box>
+      <Flex justify="space-between" align="center" mb={4}>
+        <HStack>
+          <Text fontWeight="bold">Tablero Kanban</Text>
+          {project && <Badge colorScheme="purple">{completedCount}/{totalTasks} completadas</Badge>}
+        </HStack>
+        <Button leftIcon={<FiPlus />} size="sm" onClick={() => setIsAddOpen(true)} isDisabled={!project}>Nueva tarea</Button>
+      </Flex>
+      {project && (
+        <Box mb={4}>
+          <Flex justify="space-between" mb={1}>
+            <Text fontSize="xs" color="gray.500">Progreso general</Text>
+            <Text fontSize="xs" fontWeight="bold">{totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0}%</Text>
+          </Flex>
+          <Progress value={totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0} size="sm" colorScheme="green" borderRadius="full" />
+        </Box>
+      )}
+      {!project && <Text color="gray.500" textAlign="center" py={8}>Selecciona un proyecto primero</Text>}
+      {project && (
+        <Flex gap={4} align="flex-start" overflowX="auto" pb={4}>
+          {columns.map((col) => (
+            <Box
+              key={col.id}
+              flex={1}
+              minW="260px"
+              minH="400px"
+              bg={columnBg}
+              borderRadius="xl"
+              border="2px solid"
+              borderColor={dragOverColumn === col.id ? `${col.color}.400` : 'transparent'}
+              p={3}
+              onDragOver={(e) => handleDragOver(e, col.id)}
+              onDrop={(e) => handleDrop(e, col.id)}
+              onDragLeave={() => setDragOverColumn(null)}
+              transition="border-color 0.2s"
+            >
+              <HStack mb={3} justify="space-between">
+                <HStack>
+                  <Badge colorScheme={col.color} fontSize="xs">{col.label}</Badge>
+                  <Text fontSize="xs" color="gray.500">{getColumnTasks(col.id).length}</Text>
+                </HStack>
+              </HStack>
+              <VStack spacing={2} align="stretch">
+                {getColumnTasks(col.id).map((task) => (
+                  <Box
+                    key={task.id}
+                    p={3}
+                    bg={cardBg}
+                    borderRadius="lg"
+                    boxShadow="sm"
+                    border="1px solid"
+                    borderColor={borderColor}
+                    cursor="grab"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task.id)}
+                    opacity={draggedTask === task.id ? 0.5 : 1}
+                    _hover={{ boxShadow: 'md' }}
+                  >
+                    <HStack justify="space-between" mb={1}>
+                      <Text fontWeight="bold" fontSize="sm" noOfLines={1} flex={1}>{task.name}</Text>
+                      <IconButton icon={<FiEdit3 />} size="xs" variant="ghost" onClick={() => openEditTask(task)} />
+                    </HStack>
+                    <Wrap spacing={1} mb={1}>
+                      {task.estimatedHours > 0 && <Badge size="xs" colorScheme="blue">{task.estimatedHours}h est.</Badge>}
+                      {task.startDate && <Badge size="xs" colorScheme="gray">Inicio: {task.startDate}</Badge>}
+                      {task.endDate && <Badge size="xs" colorScheme="orange">Fin: {task.endDate}</Badge>}
+                    </Wrap>
+                    {task.description && <Text fontSize="xs" color="gray.500" noOfLines={2}>{task.description.slice(0, 50)}{task.description.length > 50 ? '...' : ''}</Text>}
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      colorScheme="purple"
+                      leftIcon={<FiClock />}
+                      mt={1}
+                      onClick={() => {
+                        addAgendaTask({ title: task.name, description: task.description || `Subtarea de ${project.name}`, date: task.startDate || format(new Date(), 'yyyy-MM-dd'), completed: false, section: 'proyectos', type: 'task' });
+                        addNotification({ title: 'Tarea enviada a Agenda', message: `"${task.name}" agregada a la agenda`, type: 'info', section: 'proyectos' });
+                      }}
+                    >
+                      Activar en Agenda
+                    </Button>
+                  </Box>
+                ))}
+                {getColumnTasks(col.id).length === 0 && (
+                  <Text fontSize="xs" color="gray.400" textAlign="center" py={4}>Sin tareas</Text>
+                )}
+              </VStack>
+            </Box>
+          ))}
+        </Flex>
+      )}
+
+      <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Nueva tarea</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl><FormLabel>Nombre</FormLabel><Input value={newTaskForm.name} onChange={(e) => setNewTaskForm(f => ({ ...f, name: e.target.value }))} /></FormControl>
+              <FormControl><FormLabel>Descripción</FormLabel><Textarea value={newTaskForm.description} onChange={(e) => setNewTaskForm(f => ({ ...f, description: e.target.value }))} rows={3} /></FormControl>
+              <HStack spacing={3} w="100%">
+                <FormControl flex={1}><FormLabel>Horas est.</FormLabel><Input type="number" min={0.5} step={0.5} value={newTaskForm.estimatedHours} onChange={(e) => setNewTaskForm(f => ({ ...f, estimatedHours: e.target.value }))} /></FormControl>
+                <FormControl flex={1}><FormLabel>Inicio</FormLabel><Input type="date" value={newTaskForm.startDate} onChange={(e) => setNewTaskForm(f => ({ ...f, startDate: e.target.value }))} /></FormControl>
+                <FormControl flex={1}><FormLabel>Fin</FormLabel><Input type="date" value={newTaskForm.endDate} onChange={(e) => setNewTaskForm(f => ({ ...f, endDate: e.target.value }))} /></FormControl>
+              </HStack>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={() => setIsAddOpen(false)}>Cancelar</Button>
+            <Button onClick={addTaskFromBoard} isDisabled={!newTaskForm.name} colorScheme="purple">Crear tarea</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isTaskModalOpen} onClose={onTaskModalClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Editar Subtarea</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl><FormLabel>Nombre</FormLabel><Input value={taskEditForm.name} onChange={(e) => setTaskEditForm(f => ({ ...f, name: e.target.value }))} /></FormControl>
+              <FormControl><FormLabel>Descripción</FormLabel><Textarea value={taskEditForm.description} onChange={(e) => setTaskEditForm(f => ({ ...f, description: e.target.value }))} rows={3} /></FormControl>
+              <FormControl><FormLabel>Horas estimadas</FormLabel><Input type="number" min={0.5} step={0.5} value={taskEditForm.estimatedHours} onChange={(e) => handleTaskEditFieldChange('estimatedHours', e.target.value)} /></FormControl>
+              <HStack spacing={3} w="100%">
+                <FormControl flex={1}><FormLabel>Fecha inicio</FormLabel><Input type="date" value={taskEditForm.startDate} onChange={(e) => handleTaskEditFieldChange('startDate', e.target.value)} /></FormControl>
+                <FormControl flex={1}><FormLabel>Fecha fin (auto)</FormLabel><Input type="date" value={taskEditForm.endDate} onChange={(e) => setTaskEditForm(f => ({ ...f, endDate: e.target.value }))} /></FormControl>
+              </HStack>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onTaskModalClose}>Cancelar</Button>
+            <Button onClick={saveTaskEdit} isDisabled={!taskEditForm.name} colorScheme="purple">Guardar cambios</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
+  );
+}
+
 export default function Proyectos() {
   const { projects } = useStore();
   const [pizarraProjectId, setPizarraProjectId] = useState('');
+  const [kanbanProjectId, setKanbanProjectId] = useState('');
   const tabBg = useColorModeValue('white', 'gray.800');
 
   useEffect(() => {
     if (projects.length > 0 && !pizarraProjectId) setPizarraProjectId(projects[0].id);
   }, [projects, pizarraProjectId]);
+
+  useEffect(() => {
+    if (projects.length > 0 && !kanbanProjectId) setKanbanProjectId(projects[0].id);
+  }, [projects, kanbanProjectId]);
 
   return (
     <Tabs variant="enclosed" colorScheme="purple">
@@ -1160,6 +1447,7 @@ export default function Proyectos() {
         <Tab><FiClock style={{ marginRight: 8 }} />Registrar Horas</Tab>
         <Tab><FiTrendingUp style={{ marginRight: 8 }} />Estadísticas</Tab>
         <Tab><FiFileText style={{ marginRight: 8 }} />Pizarra</Tab>
+        <Tab><FiGrid style={{ marginRight: 8 }} />Tablero</Tab>
       </TabList>
       <TabPanels>
         <TabPanel px={0}><ProjectManager /></TabPanel>
@@ -1177,6 +1465,21 @@ export default function Proyectos() {
                 </Select>
               </HStack>
               {pizarraProjectId && <PizarraProyectos projectId={pizarraProjectId} />}
+            </Box>
+          )}
+        </TabPanel>
+        <TabPanel px={0}>
+          {projects.length === 0 ? (
+            <Text color="gray.500" textAlign="center" py={8}>Crea un proyecto primero para usar el tablero</Text>
+          ) : (
+            <Box>
+              <HStack mb={4} p={3} bg={tabBg} borderRadius="xl" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+                <Text fontSize="sm" fontWeight="bold">Proyecto:</Text>
+                <Select size="sm" w="250px" value={kanbanProjectId} onChange={(e) => setKanbanProjectId(e.target.value)}>
+                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </Select>
+              </HStack>
+              {kanbanProjectId && <KanbanBoard projectId={kanbanProjectId} />}
             </Box>
           )}
         </TabPanel>
