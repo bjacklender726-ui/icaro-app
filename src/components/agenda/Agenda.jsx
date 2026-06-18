@@ -174,20 +174,20 @@ export default function Agenda() {
         <HStack spacing={2}>
           <IconButton icon={<FiChevronLeft />} size="sm" onClick={() => {
             if (viewMode === 'day') setSelectedDate((d) => subDays(d, 1));
-            else if (viewMode === 'week') setSelectedDate((d) => subWeeks(d, 1));
+            else if (viewMode === 'week') setSelectedDate((d) => subMonths(d, 1));
             else setSelectedDate((d) => subMonths(d, 1));
           }} />
           <Box textAlign="center" minW="200px">
             <Text fontWeight="bold" fontSize="lg" textTransform="capitalize">
               {viewMode === 'day' && format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
-              {viewMode === 'week' && `${format(weekDays[0], 'dd MMM', { locale: es })} - ${format(weekDays[6], 'dd MMM yyyy', { locale: es })}`}
+              {viewMode === 'week' && format(selectedDate, "MMMM yyyy", { locale: es })}
               {viewMode === 'month' && format(selectedDate, "MMMM yyyy", { locale: es })}
             </Text>
             {isToday(selectedDate) && viewMode === 'day' && <Badge colorScheme="green" fontSize="xs">Hoy</Badge>}
           </Box>
           <IconButton icon={<FiChevronRight />} size="sm" onClick={() => {
             if (viewMode === 'day') setSelectedDate((d) => addDays(d, 1));
-            else if (viewMode === 'week') setSelectedDate((d) => addWeeks(d, 1));
+            else if (viewMode === 'week') setSelectedDate((d) => addMonths(d, 1));
             else setSelectedDate((d) => addMonths(d, 1));
           }} />
         </HStack>
@@ -210,131 +210,158 @@ export default function Agenda() {
       </Tabs>
 
       {viewMode === 'day' && (
-        <Grid templateColumns="70px 1fr 240px" gap={0} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} overflow="hidden" maxH="calc(100vh - 220px)">
-          <Box borderRight="1px solid" borderColor={borderColor} overflowY="auto">
-            {HOURS.map((h) => (
-              <Box key={h} h={`${HOUR_HEIGHT}px`} px={2} py={1} borderBottom="1px solid" borderColor={borderColor}>
-                <Text fontSize="xs" color="gray.500" fontWeight="500">{`${h.toString().padStart(2, '0')}:00`}</Text>
+        <Box bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} overflow="hidden" maxH="calc(100vh - 220px)">
+          <Flex h="100%">
+            <Box flex={1} overflowY="auto" display="flex">
+              <Box borderRight="1px solid" borderColor={borderColor} flexShrink={0}>
+                {HOURS.map((h) => (
+                  <Box key={h} h={`${HOUR_HEIGHT}px`} px={2} py={1} borderBottom="1px solid" borderColor={borderColor}>
+                    <Text fontSize="xs" color="gray.500" fontWeight="500">{`${h.toString().padStart(2, '0')}:00`}</Text>
+                  </Box>
+                ))}
               </Box>
-            ))}
-          </Box>
 
-          <Box position="relative" overflowY="auto">
-            {HOURS.map((h) => (
-              <Box key={h} h={`${HOUR_HEIGHT}px`} borderBottom="1px solid" borderColor={borderColor} _hover={{ bg: hoverBg }} cursor="pointer"
-                onClick={() => openNew(`${h.toString().padStart(2, '0')}:00`)} />
-            ))}
-            {dayTasks.map((task) => {
-              const pos = getTaskPosition(task.hour);
-              const height = getTaskHeight(task.hour, task.hourEnd);
-              const cat = CATEGORIES[task.category] || CATEGORIES.otro;
-              return (
-                <Tooltip key={task.id} label={`${task.title} - ${task.description || ''}`} hasArrow>
-                  <Box position="absolute" top={`${pos}px`} left="4px" right="4px" height={`${height}px`}
-                    bg={`${cat.color}20`} borderLeft={`3px solid ${cat.color}`} borderRadius="md"
-                    px={2} py={1} cursor="pointer" overflow="hidden"
-                    _hover={{ bg: `${cat.color}30`, boxShadow: 'md' }}
-                    onClick={() => openEdit(task)} transition="all 0.2s">
-                    <Flex justify="space-between" align="start">
-                      <Box flex={1}>
-                        <Text fontSize="xs" fontWeight="bold" noOfLines={1}
-                          textDecoration={task.completed ? 'line-through' : 'none'}>
-                          {task.title} {task.category === 'otro' && task.customCategory ? `(${task.customCategory})` : ''}
-                        </Text>
-                        <Text fontSize="xs" color="gray.500">{task.hour}-{task.hourEnd || ''}</Text>
+              <Box position="relative" flex={1}>
+                {HOURS.map((h) => (
+                  <Box key={h} h={`${HOUR_HEIGHT}px`} borderBottom="1px solid" borderColor={borderColor} _hover={{ bg: hoverBg }} cursor="pointer"
+                    onClick={() => openNew(`${h.toString().padStart(2, '0')}:00`)} />
+                ))}
+                {dayTasks.map((task) => {
+                  const pos = getTaskPosition(task.hour);
+                  const height = getTaskHeight(task.hour, task.hourEnd);
+                  const cat = CATEGORIES[task.category] || CATEGORIES.otro;
+                  return (
+                    <Tooltip key={task.id} label={`${task.title} - ${task.description || ''}`} hasArrow>
+                      <Box position="absolute" top={`${pos}px`} left="4px" right="4px" height={`${height}px`}
+                        bg={`${cat.color}20`} borderLeft={`3px solid ${cat.color}`} borderRadius="md"
+                        px={2} py={1} cursor="pointer" overflow="hidden"
+                        _hover={{ bg: `${cat.color}30`, boxShadow: 'md' }}
+                        onClick={() => openEdit(task)} transition="all 0.2s">
+                        <Flex justify="space-between" align="start">
+                          <Box flex={1}>
+                            <Text fontSize="xs" fontWeight="bold" noOfLines={1}
+                              textDecoration={task.completed ? 'line-through' : 'none'}>
+                              {task.title} {task.category === 'otro' && task.customCategory ? `(${task.customCategory})` : ''}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500">{task.hour}-{task.hourEnd || ''}</Text>
+                          </Box>
+                          <HStack spacing={1}>
+                            {task.completed && <FiCheck size={10} color="green" />}
+                            <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red"
+                              onClick={(e) => { e.stopPropagation(); deleteAgendaTask(task.id); }} />
+                          </HStack>
+                        </Flex>
                       </Box>
-                      <HStack spacing={1}>
-                        {task.completed && <FiCheck size={10} color="green" />}
-                        <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red"
-                          onClick={(e) => { e.stopPropagation(); deleteAgendaTask(task.id); }} />
-                      </HStack>
-                    </Flex>
-                  </Box>
-                </Tooltip>
-              );
-            })}
-            {isToday(selectedDate) && (() => {
-              const now = new Date();
-              const h = now.getHours();
-              const m = now.getMinutes();
-              const top = h * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
-              return (
-                <Box position="absolute" top={`${top}px`} left={0} right={0} h="2px" bg="red.500" zIndex={10}>
-                  <Box position="absolute" left="-5px" top="-4px" w="10px" h="10px" bg="red.500" borderRadius="full" />
-                </Box>
-              );
-            })()}
-          </Box>
+                    </Tooltip>
+                  );
+                })}
+                {isToday(selectedDate) && (() => {
+                  const now = new Date();
+                  const h = now.getHours();
+                  const m = now.getMinutes();
+                  const top = h * HOUR_HEIGHT + (m / 60) * HOUR_HEIGHT;
+                  return (
+                    <Box position="absolute" top={`${top}px`} left={0} right={0} h="2px" bg="red.500" zIndex={10}>
+                      <Box position="absolute" left="-5px" top="-4px" w="10px" h="10px" bg="red.500" borderRadius="full" />
+                    </Box>
+                  );
+                })()}
+              </Box>
+            </Box>
 
-          <Box borderLeft="1px solid" borderColor={borderColor} p={3} overflowY="auto">
-            <Text fontWeight="bold" fontSize="sm" mb={3}>Avances del Día</Text>
-            {moduleAdvances.length === 0 && <Text color="gray.500" fontSize="xs">Sin avances hoy</Text>}
-            <VStack align="stretch" spacing={2}>
-              {moduleAdvances.map((a, i) => (
-                <Flex key={i} p={2} bg={hoverBg} borderRadius="md" cursor="pointer"
-                  _hover={{ bg: rowHoverBg }}
-                  onClick={() => openNewFromAdvance(a.type)}>
-                  <Text fontSize="sm" mr={2}>{a.icon}</Text>
-                  <Box flex={1}>
-                    <Text fontSize="xs" fontWeight="bold">{a.title}</Text>
-                    {a.duration > 0 && <Text fontSize="xs" color="gray.500">{a.duration} min</Text>}
-                  </Box>
-                  <Badge size="xs" colorScheme={a.type === 'oposiciones' ? 'blue' : a.type === 'gym' ? 'red' : a.type === 'trabajo' ? 'orange' : 'purple'}>
-                    + Tarea
-                  </Badge>
-                </Flex>
-              ))}
-            </VStack>
+            <Box borderLeft="1px solid" borderColor={borderColor} p={3} overflowY="auto" w="240px" flexShrink={0}>
+              <Text fontWeight="bold" fontSize="sm" mb={3}>Avances del Día</Text>
+              {moduleAdvances.length === 0 && <Text color="gray.500" fontSize="xs">Sin avances hoy</Text>}
+              <VStack align="stretch" spacing={2}>
+                {moduleAdvances.map((a, i) => (
+                  <Flex key={i} p={2} bg={hoverBg} borderRadius="md" cursor="pointer"
+                    _hover={{ bg: rowHoverBg }}
+                    onClick={() => openNewFromAdvance(a.type)}>
+                    <Text fontSize="sm" mr={2}>{a.icon}</Text>
+                    <Box flex={1}>
+                      <Text fontSize="xs" fontWeight="bold">{a.title}</Text>
+                      {a.duration > 0 && <Text fontSize="xs" color="gray.500">{a.duration} min</Text>}
+                    </Box>
+                    <Badge size="xs" colorScheme={a.type === 'oposiciones' ? 'blue' : a.type === 'gym' ? 'red' : a.type === 'trabajo' ? 'orange' : 'purple'}>
+                      + Tarea
+                    </Badge>
+                  </Flex>
+                ))}
+              </VStack>
 
-            <Text fontWeight="bold" fontSize="sm" mt={4} mb={2}>Tareas ({dayTasks.length})</Text>
-            <VStack align="stretch" spacing={1}>
-              {dayTasks.map((t) => (
-                <Flex key={t.id} p={1.5} bg={hoverBg} borderRadius="md"
-                  justify="space-between" align="center" cursor="pointer" onClick={() => openEdit(t)}>
-                  <Text fontSize="xs" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1} noOfLines={1}>{t.title}</Text>
-                  <Badge size="xs" colorScheme={t.completed ? 'green' : 'blue'}>{t.hour}</Badge>
-                </Flex>
-              ))}
-            </VStack>
-          </Box>
-        </Grid>
+              <Text fontWeight="bold" fontSize="sm" mt={4} mb={2}>Tareas ({dayTasks.length})</Text>
+              <VStack align="stretch" spacing={1}>
+                {dayTasks.map((t) => (
+                  <Flex key={t.id} p={1.5} bg={hoverBg} borderRadius="md"
+                    justify="space-between" align="center" cursor="pointer" onClick={() => openEdit(t)}>
+                    <Text fontSize="xs" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1} noOfLines={1}>{t.title}</Text>
+                    <Badge size="xs" colorScheme={t.completed ? 'green' : 'blue'}>{t.hour}</Badge>
+                  </Flex>
+                ))}
+              </VStack>
+            </Box>
+          </Flex>
+        </Box>
       )}
 
       {viewMode === 'week' && (
-        <Grid templateColumns="repeat(7, 1fr)" gap={2} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} p={3}>
-          {weekDays.map((d) => {
-            const tasks = agendaTasks.filter((t) => t.date === format(d, 'yyyy-MM-dd'));
-            const summary = getDaySummary(d);
-            const today = isToday(d);
-            return (
-              <Box key={d.toISOString()} minH="200px" bg={today ? todayBg : 'transparent'} borderRadius="lg" p={2}
-                border={today ? '2px solid' : '1px solid'} borderColor={today ? 'blue.400' : borderColor} cursor="pointer"
-                _hover={{ bg: today ? todayHoverBg : cellHoverBg }}
-                onClick={() => { setSelectedDate(d); setViewMode('day'); }}>
-                <Text fontSize="xs" fontWeight="bold" textTransform="capitalize" mb={1} color={today ? 'blue.500' : 'inherit'}>
-                  {format(d, 'EEE d', { locale: es })}
-                </Text>
-                {tasks.slice(0, 3).map((t) => {
-                  const cat = CATEGORIES[t.category] || CATEGORIES.otro;
-                  return (
-                    <Box key={t.id} p={1} mb={1} bg={`${cat.color}15`} borderLeft={`2px solid ${cat.color}`} borderRadius="sm">
-                      <Text fontSize="xs" noOfLines={1} fontWeight="500">{t.title}</Text>
-                      <Text fontSize="xs" color="gray.500">{t.hour}</Text>
-                    </Box>
-                  );
-                })}
-                {tasks.length > 3 && <Text fontSize="xs" color="gray.500">+{tasks.length - 3} más</Text>}
-                <VStack align="stretch" spacing={0} mt={1}>
-                  {summary.studyMin > 0 && <Text fontSize="xs" color="blue.500">📚 {summary.studyMin}min</Text>}
-                  {summary.gymCount > 0 && <Text fontSize="xs" color="red.500">🏋️ {summary.gymCount} sesiones</Text>}
-                  {summary.offerCount > 0 && <Text fontSize="xs" color="orange.500">💼 {summary.offerCount} ofertas</Text>}
-                  {summary.projectHours > 0 && <Text fontSize="xs" color="purple.500">💻 {summary.projectHours.toFixed(1)}h</Text>}
-                  {summary.taskCount > 0 && <Text fontSize="xs" color="green.500">✅ {summary.taskCompleted}/{summary.taskCount}</Text>}
-                </VStack>
-              </Box>
-            );
-          })}
-        </Grid>
+        <Box bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} p={3}>
+          <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={2}>
+            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((d) => (
+              <Text key={d} textAlign="center" fontSize="xs" fontWeight="bold" color="gray.500" py={1}>{d}</Text>
+            ))}
+          </Grid>
+          <VStack spacing={1} align="stretch">
+            {monthWeeks.map((week, wi) => {
+              const currentWeek = week.some(d => isToday(d));
+              return (
+                <Grid key={wi} templateColumns="repeat(7, 1fr)" gap={1}
+                  bg={currentWeek ? todayBg : 'transparent'}
+                  borderRadius="md" p={currentWeek ? 1 : 0}>
+                  {week.map((d) => {
+                    const inMonth = d.getMonth() === selectedDate.getMonth();
+                    const tasks = agendaTasks.filter((t) => t.date === format(d, 'yyyy-MM-dd'));
+                    const summary = getDaySummary(d);
+                    const today = isToday(d);
+                    return (
+                      <Box key={d.toISOString()} minH="100px" p={1.5}
+                        bg={today ? todayBg : 'transparent'}
+                        borderRadius="lg" cursor="pointer"
+                        border={today ? '2px solid' : '1px solid'}
+                        borderColor={today ? 'blue.400' : borderColor}
+                        opacity={inMonth ? 1 : 0.35}
+                        _hover={{ bg: today ? todayHoverBg : cellHoverBg }}
+                        onClick={() => { setSelectedDate(d); setViewMode('day'); }}>
+                        <Text fontSize="xs" fontWeight={today ? 'bold' : 'normal'}
+                          textTransform="capitalize" mb={1}
+                          color={today ? 'blue.500' : 'inherit'}>
+                          {format(d, 'EEE d', { locale: es })}
+                        </Text>
+                        {tasks.slice(0, 3).map((t) => {
+                          const cat = CATEGORIES[t.category] || CATEGORIES.otro;
+                          return (
+                            <Box key={t.id} p={1} mb={1} bg={`${cat.color}15`} borderLeft={`2px solid ${cat.color}`} borderRadius="sm">
+                              <Text fontSize="xs" noOfLines={1} fontWeight="500">{t.title}</Text>
+                              <Text fontSize="xs" color="gray.500">{t.hour}</Text>
+                            </Box>
+                          );
+                        })}
+                        {tasks.length > 3 && <Text fontSize="xs" color="gray.500">+{tasks.length - 3} más</Text>}
+                        <VStack align="stretch" spacing={0} mt={1}>
+                          {summary.studyMin > 0 && <Text fontSize="xs" color="blue.500">📚 {summary.studyMin}min</Text>}
+                          {summary.gymCount > 0 && <Text fontSize="xs" color="red.500">🏋️ {summary.gymCount} sesiones</Text>}
+                          {summary.offerCount > 0 && <Text fontSize="xs" color="orange.500">💼 {summary.offerCount} ofertas</Text>}
+                          {summary.projectHours > 0 && <Text fontSize="xs" color="purple.500">💻 {summary.projectHours.toFixed(1)}h</Text>}
+                          {summary.taskCount > 0 && <Text fontSize="xs" color="green.500">✅ {summary.taskCompleted}/{summary.taskCount}</Text>}
+                        </VStack>
+                      </Box>
+                    );
+                  })}
+                </Grid>
+              );
+            })}
+          </VStack>
+        </Box>
       )}
 
       {viewMode === 'month' && (

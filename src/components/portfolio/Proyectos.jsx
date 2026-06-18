@@ -24,8 +24,22 @@ const TECH_OPTIONS = {
   languages: ['JavaScript', 'TypeScript', 'Python', 'Java', 'C#', 'C++', 'Go', 'Rust', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'Dart', 'SQL'],
   frameworks: ['React', 'Vue.js', 'Angular', 'Svelte', 'Next.js', 'Nuxt.js', 'Node.js', 'Express', 'FastAPI', 'Django', 'Flask', 'Spring Boot', 'Laravel', 'Flutter', 'React Native', 'Unity', '.NET'],
   databases: ['PostgreSQL', 'MySQL', 'MongoDB', 'SQLite', 'Redis', 'Firebase', 'Supabase', 'DynamoDB', 'Elasticsearch'],
+  libraries: ['Tailwind CSS', 'Material UI', 'Chakra UI', 'Ant Design', 'Bootstrap', 'Redux', 'Zustand', 'Jotai', 'TanStack Query', 'Axios', 'Socket.io', 'Prisma', 'TypeORM', 'Sequelize', 'Mongoose', 'Jest', 'Vitest', 'Cypress', 'Playwright', 'Storybook', 'Webpack', 'Vite', 'Babel', 'ESLint', 'Prettier'],
   tools: ['Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Vercel', 'Netlify', 'Git', 'GitHub Actions', 'Jenkins', 'Terraform'],
 };
+
+const PROJECT_TYPES = [
+  { id: 'web', name: 'Web App', tasks: ['Configurar entorno', 'Diseñar UI/UX', 'Crear componentes', 'Implementar lógica', 'Testing', 'Deploy'] },
+  { id: 'mobile', name: 'App Móvil', tasks: ['Configurar proyecto', 'Diseñar pantallas', 'Implementar navegación', 'Integrar APIs', 'Testing', 'Build y publicación'] },
+  { id: 'api', name: 'API/Backend', tasks: ['Configurar proyecto', 'Definir modelos', 'Crear endpoints', 'Autenticación', 'Tests', 'Documentación', 'Deploy'] },
+  { id: 'fullstack', name: 'Fullstack', tasks: ['Configurar repositorio', 'Frontend scaffolding', 'Backend scaffolding', 'Base de datos', 'Integración', 'Tests', 'CI/CD', 'Deploy'] },
+  { id: 'data', name: 'Data Science', tasks: ['Configurar entorno', 'Recolectar datos', 'Limpieza', 'Análisis exploratorio', 'Modelado', 'Documentar', 'Publicar'] },
+  { id: 'game', name: 'Videojuego', tasks: ['Configurar motor', 'Game Design Doc', 'Prototipo', 'Mecánicas principales', 'Arte y assets', 'Sonido', 'Testing', 'Build'] },
+  { id: 'devops', name: 'DevOps/Infra', tasks: ['Definir arquitectura', 'Docker', 'Orquestación', 'CI/CD', 'Monitoreo', 'Documentación'] },
+  { id: 'desktop', name: 'App Desktop', tasks: ['Configurar framework', 'Diseñar UI', 'Implementar funcionalidad', 'Integración con SO', 'Testing', 'Empaquetado', 'Distribución'] },
+  { id: 'cli', name: 'CLI Tool', tasks: ['Configurar proyecto', 'Definir comandos', 'Implementar lógica', 'Manejamiento de errores', 'Tests', 'Documentación', 'Publicar paquete'] },
+  { id: 'library', name: 'Librería/Package', tasks: ['Definir API pública', 'Implementar funcionalidad', 'Tests unitarios', 'Documentación (JSDoc/typedoc)', 'Configurar build', 'Publicar en npm/PyPI'] },
+];
 
 const SUGGESTION_COLORS = ['blue', 'green', 'purple', 'orange', 'teal', 'pink', 'cyan', 'red', 'yellow', 'gray'];
 
@@ -103,10 +117,29 @@ function ProjectManager() {
       name: suggestion.name,
       description: suggestion.description,
       technologies: suggestion.technologies,
-      tasks: generateSubtasks
-        ? suggestion.defaultTasks.map((name, i) => ({ id: `gen-${i}`, name, description: '', completed: false }))
-        : [],
+      tasks: suggestion.defaultTasks.map((name, i) => ({ id: `gen-${i}`, name, description: '', completed: false })),
     }));
+  };
+
+  const regenerateSuggestionTasks = () => {
+    if (!selectedSuggestion) return;
+    setForm((f) => ({
+      ...f,
+      tasks: selectedSuggestion.defaultTasks.map((name, i) => ({ id: `gen-${i}`, name, description: '', completed: false })),
+    }));
+  };
+
+  const [selectedProjectType, setSelectedProjectType] = useState('');
+
+  const selectProjectType = (typeId) => {
+    setSelectedProjectType(typeId);
+    const projectType = PROJECT_TYPES.find((t) => t.id === typeId);
+    if (projectType && generateSubtasks) {
+      setForm((f) => ({
+        ...f,
+        tasks: projectType.tasks.map((name, i) => ({ id: `type-${i}`, name, description: '', completed: false })),
+      }));
+    }
   };
 
   const toggleTech = (tech) => {
@@ -259,12 +292,21 @@ function ProjectManager() {
                 <FormControl><FormLabel>Nombre</FormLabel><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></FormControl>
                 <FormControl><FormLabel>Descripción</FormLabel><Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} /></FormControl>
 
+                <FormControl>
+                  <FormLabel>Tipo de proyecto</FormLabel>
+                  <Select placeholder="Seleccionar tipo (opcional)" value={selectedProjectType} onChange={(e) => selectProjectType(e.target.value)}>
+                    {PROJECT_TYPES.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </Select>
+                </FormControl>
+
                 <Box>
                   <Text fontWeight="bold" fontSize="sm" mb={2}>Tecnologías</Text>
                   {Object.entries(TECH_OPTIONS).map(([category, techs]) => (
                     <Box key={category} mb={3}>
                       <Text fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" mb={1}>
-                        {category === 'languages' ? 'Lenguajes' : category === 'frameworks' ? 'Frameworks' : category === 'databases' ? 'Bases de datos' : 'Herramientas'}
+                        {category === 'languages' ? 'Lenguajes' : category === 'frameworks' ? 'Frameworks' : category === 'databases' ? 'Bases de datos' : category === 'libraries' ? 'Librerías' : 'Herramientas'}
                       </Text>
                       <Wrap spacing={1}>
                         {techs.map((tech) => (
@@ -286,7 +328,19 @@ function ProjectManager() {
 
                 <FormControl display="flex" alignItems="center">
                   <FormLabel htmlFor="gen-subtasks" mb="0" fontSize="sm">Generar subtareas automáticamente</FormLabel>
-                  <Switch id="gen-subtasks" isChecked={generateSubtasks} onChange={(e) => setGenerateSubtasks(e.target.checked)} colorScheme="green" />
+                  <Switch id="gen-subtasks" isChecked={generateSubtasks} onChange={(e) => {
+                    const checked = e.target.checked;
+                    setGenerateSubtasks(checked);
+                    if (checked && selectedProjectType) {
+                      const projectType = PROJECT_TYPES.find((t) => t.id === selectedProjectType);
+                      if (projectType) {
+                        setForm((f) => ({
+                          ...f,
+                          tasks: projectType.tasks.map((name, i) => ({ id: `type-${i}`, name, description: '', completed: false })),
+                        }));
+                      }
+                    }
+                  }} colorScheme="green" />
                 </FormControl>
               </VStack>
             )}
@@ -316,7 +370,10 @@ function ProjectManager() {
 
                 {!editing && creationMode === 'suggested' && selectedSuggestion && (
                   <>
-                    <FormControl><FormLabel>Nombre</FormLabel><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></FormControl>
+                    <HStack>
+                      <FormControl flex={1}><FormLabel>Nombre</FormLabel><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></FormControl>
+                      <Button mt={6} size="sm" colorScheme="blue" variant="outline" onClick={regenerateSuggestionTasks}>Regenerar subtareas</Button>
+                    </HStack>
                     <FormControl><FormLabel>Descripción</FormLabel><Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} /></FormControl>
                     <FormControl><FormLabel>Enlace online</FormLabel><Input type="url" placeholder="https://..." value={form.onlineLink || ''} onChange={(e) => setForm((f) => ({ ...f, onlineLink: e.target.value }))} /></FormControl>
                     <Box>
@@ -328,10 +385,6 @@ function ProjectManager() {
                       </Wrap>
                     </Box>
                   </>
-                )}
-
-                {!editing && creationMode === 'suggested' && selectedSuggestion && (
-                  <FormControl><FormLabel>Enlace online</FormLabel><Input type="url" placeholder="https://..." value={form.onlineLink || ''} onChange={(e) => setForm((f) => ({ ...f, onlineLink: e.target.value }))} /></FormControl>
                 )}
 
                 {!editing && creationMode === 'custom' && (
@@ -637,7 +690,7 @@ function PizarraProyectos({ projectId }) {
           {project && <Badge colorScheme="purple">{completedTasks}/{totalTasks} subtareas</Badge>}
         </HStack>
         <HStack>
-          <Button size="xs" colorScheme="green" onClick={generateSubtasks} isDisabled={!project || board.length === 0}>Generar subtareas</Button>
+          <Button size="sm" colorScheme="green" onClick={generateSubtasks} isDisabled={!project} fontWeight="bold" px={4}>Generar subtareas</Button>
           <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo elemento</Button>
         </HStack>
       </Flex>
