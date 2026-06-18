@@ -167,7 +167,7 @@ function ConvocatoriaManager() {
 }
 
 // ===== TEMARIO MANAGER =====
-function TemarioManager() {
+function TemarioManager({ selectedConvId }) {
   const { temarios, addTemario, updateTemario, deleteTemario, studySessions } = useStore();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editing, setEditing] = useState(null);
@@ -176,6 +176,11 @@ function TemarioManager() {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
+
+  const filteredTemarios = useMemo(() =>
+    temarios.filter((t) => !selectedConvId || t.convocatoriaId === selectedConvId),
+    [temarios, selectedConvId]
+  );
 
   const getTopicTime = (topicId) => {
     return studySessions.filter((s) => s.topicId === topicId).reduce((a, s) => a + (s.seconds || (s.duration || 0) * 60), 0);
@@ -189,7 +194,7 @@ function TemarioManager() {
   const openEdit = (t) => { setEditing(t); setForm({ ...t }); onOpen(); };
   const save = () => {
     if (editing) updateTemario(editing.id, form);
-    else addTemario(form);
+    else addTemario({ ...form, convocatoriaId: selectedConvId || '' });
     onClose();
   };
 
@@ -216,8 +221,8 @@ function TemarioManager() {
         <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Temario</Button>
       </Flex>
       <VStack spacing={4} align="stretch">
-        {temarios.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay temarios creados</Text>}
-        {temarios.map((t) => {
+        {filteredTemarios.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay temarios creados</Text>}
+        {filteredTemarios.map((t) => {
           const completed = (t.topics || []).filter((tp) => tp.completed).length;
           const total = (t.topics || []).length;
           const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -294,7 +299,7 @@ function TemarioManager() {
 }
 
 // ===== TEST MANAGER =====
-function TestManager() {
+function TestManager({ selectedConvId }) {
   const { tests, addTest, deleteTest, testResults, addTestResult, addXP } = useStore();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [form, setForm] = useState({ name: '', questions: [] });
@@ -306,6 +311,11 @@ function TestManager() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
 
+  const filteredTests = useMemo(() =>
+    tests.filter((t) => !selectedConvId || t.convocatoriaId === selectedConvId),
+    [tests, selectedConvId]
+  );
+
   const addQuestion = () => {
     if (questionForm.text && questionForm.options.filter((o) => o).length >= 2) {
       setForm((f) => ({ ...f, questions: [...f.questions, { ...questionForm, id: Date.now().toString() }] }));
@@ -313,7 +323,7 @@ function TestManager() {
     }
   };
 
-  const saveTest = () => { addTest(form); setForm({ name: '', questions: [] }); onClose(); };
+  const saveTest = () => { addTest({ ...form, convocatoriaId: selectedConvId || '' }); setForm({ name: '', questions: [] }); onClose(); };
 
   const submitTest = () => {
     if (!activeTest) return;
@@ -366,9 +376,9 @@ function TestManager() {
             <Text fontWeight="bold">Tests</Text>
             <Button leftIcon={<FiPlus />} size="sm" onClick={() => { setForm({ name: '', questions: [] }); onOpen(); }}>Nuevo Test</Button>
           </Flex>
-          {tests.length === 0 ? <Text color="gray.500" textAlign="center" py={4}>No hay tests creados</Text> : (
+          {filteredTests.length === 0 ? <Text color="gray.500" textAlign="center" py={4}>No hay tests creados</Text> : (
             <VStack spacing={3} align="stretch">
-              {tests.map((t) => (
+              {filteredTests.map((t) => (
                 <Flex key={t.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} justify="space-between" align="center">
                   <Box>
                     <Text fontWeight="bold">{t.name}</Text>
@@ -419,7 +429,7 @@ function TestManager() {
 }
 
 // ===== SUPUESTOS PRACTICOS MANAGER =====
-function SupuestosPracticosManager() {
+function SupuestosPracticosManager({ selectedConvId }) {
   const { supuestosPracticos, addSupuestoPractico, updateSupuestoPractico, deleteSupuestoPractico } = useStore();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editing, setEditing] = useState(null);
@@ -428,20 +438,25 @@ function SupuestosPracticosManager() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const cardBg = useColorModeValue('gray.50', 'gray.700');
 
+  const filteredSupuestos = useMemo(() =>
+    supuestosPracticos.filter((sp) => !selectedConvId || sp.convocatoriaId === selectedConvId),
+    [supuestosPracticos, selectedConvId]
+  );
+
   const stats = useMemo(() => {
-    const total = supuestosPracticos.length;
-    const completados = supuestosPracticos.filter((sp) => sp.completado).length;
-    const puntuaciones = supuestosPracticos.filter((sp) => sp.puntuacion !== '' && sp.puntuacion !== undefined).map((sp) => Number(sp.puntuacion));
+    const total = filteredSupuestos.length;
+    const completados = filteredSupuestos.filter((sp) => sp.completado).length;
+    const puntuaciones = filteredSupuestos.filter((sp) => sp.puntuacion !== '' && sp.puntuacion !== undefined).map((sp) => Number(sp.puntuacion));
     const media = puntuaciones.length > 0 ? (puntuaciones.reduce((a, b) => a + b, 0) / puntuaciones.length).toFixed(1) : 0;
     return { total, completados, media };
-  }, [supuestosPracticos]);
+  }, [filteredSupuestos]);
 
   const openNew = () => { setEditing(null); setForm({ titulo: '', materia: '', fecha: '', puntuacion: '', tiempoEmpleado: '', completado: false, notas: '' }); onOpen(); };
   const openEdit = (sp) => { setEditing(sp); setForm({ ...sp }); onOpen(); };
   const save = () => {
     const data = { ...form, puntuacion: form.puntuacion !== '' ? Number(form.puntuacion) : '' };
     if (editing) updateSupuestoPractico(editing.id, data);
-    else addSupuestoPractico(data);
+    else addSupuestoPractico({ ...data, convocatoriaId: selectedConvId || '' });
     onClose();
   };
 
@@ -465,8 +480,8 @@ function SupuestosPracticosManager() {
       </SimpleGrid>
 
       <VStack spacing={3} align="stretch">
-        {supuestosPracticos.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay supuestos prácticos</Text>}
-        {supuestosPracticos.map((sp) => (
+        {filteredSupuestos.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay supuestos prácticos</Text>}
+        {filteredSupuestos.map((sp) => (
           <Flex key={sp.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} justify="space-between" align="start">
             <Box flex={1}>
               <HStack mb={1} wrap="wrap">
@@ -521,7 +536,7 @@ function SupuestosPracticosManager() {
 }
 
 // ===== SIMULACROS MANAGER =====
-function SimulacrosManager() {
+function SimulacrosManager({ selectedConvId }) {
   const { simulacros, addSimulacro, updateSimulacro, deleteSimulacro } = useStore();
   const convocatoria = useStore((s) => s.convocatoria);
   const mediaAprobar = Number(convocatoria[0]?.mediasAprobar) || 70;
@@ -531,14 +546,19 @@ function SimulacrosManager() {
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
+  const filteredSimulacros = useMemo(() =>
+    simulacros.filter((s) => !selectedConvId || s.convocatoriaId === selectedConvId),
+    [simulacros, selectedConvId]
+  );
+
   const stats = useMemo(() => {
-    const total = simulacros.length;
-    const puntuaciones = simulacros.filter((s) => s.puntuacion !== '' && s.puntuacion !== undefined).map((s) => Number(s.puntuacion));
+    const total = filteredSimulacros.length;
+    const puntuaciones = filteredSimulacros.filter((s) => s.puntuacion !== '' && s.puntuacion !== undefined).map((s) => Number(s.puntuacion));
     const media = puntuaciones.length > 0 ? (puntuaciones.reduce((a, b) => a + b, 0) / puntuaciones.length).toFixed(1) : 0;
-    const aprobados = simulacros.filter((s) => s.aprobado).length;
+    const aprobados = filteredSimulacros.filter((s) => s.aprobado).length;
     const mejor = puntuaciones.length > 0 ? Math.max(...puntuaciones) : 0;
     return { total, media, aprobados, mejor };
-  }, [simulacros]);
+  }, [filteredSimulacros]);
 
   const openNew = () => { setEditing(null); setForm({ titulo: '', fecha: '', puntuacion: '', tiempoLimite: '', tiempoEmpleado: '', aprobado: false, numPreguntas: '', aciertos: '', errores: '', blancos: '', notas: '' }); onOpen(); };
   const openEdit = (sm) => { setEditing(sm); setForm({ ...sm }); onOpen(); };
@@ -546,7 +566,7 @@ function SimulacrosManager() {
     const puntuacion = form.puntuacion !== '' ? Number(form.puntuacion) : '';
     const data = { ...form, puntuacion, aprobado: puntuacion >= mediaAprobar };
     if (editing) updateSimulacro(editing.id, data);
-    else addSimulacro(data);
+    else addSimulacro({ ...data, convocatoriaId: selectedConvId || '' });
     onClose();
   };
 
@@ -573,8 +593,8 @@ function SimulacrosManager() {
       </SimpleGrid>
 
       <VStack spacing={3} align="stretch">
-        {simulacros.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay simulacros</Text>}
-        {simulacros.map((sm) => (
+        {filteredSimulacros.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay simulacros</Text>}
+        {filteredSimulacros.map((sm) => (
           <Flex key={sm.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} justify="space-between" align="start">
             <Box flex={1}>
               <HStack mb={1} wrap="wrap">
@@ -640,7 +660,7 @@ function SimulacrosManager() {
 }
 
 // ===== PIZARRA MANAGER =====
-function PizarraManager() {
+function PizarraManager({ selectedConvId }) {
   const { oposicionesPizarra, addOposicionesPizarraItem, updateOposicionesPizarraItem, deleteOposicionesPizarraItem, addAgendaTask } = useStore();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isTaskOpen, onOpen: onTaskOpen, onClose: onTaskClose } = useDisclosure();
@@ -652,6 +672,11 @@ function PizarraManager() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
 
+  const filteredPizarra = useMemo(() =>
+    oposicionesPizarra.filter((p) => !selectedConvId || p.convocatoriaId === selectedConvId),
+    [oposicionesPizarra, selectedConvId]
+  );
+
   const extractYouTubeId = (url) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([^&?#]+)/);
     return match ? match[1] : null;
@@ -661,7 +686,7 @@ function PizarraManager() {
   const openEdit = (item) => { setEditing(item); setForm({ type: item.type, title: item.title, content: item.content }); onOpen(); };
   const save = () => {
     if (editing) updateOposicionesPizarraItem(editing.id, form);
-    else addOposicionesPizarraItem(form);
+    else addOposicionesPizarraItem({ ...form, convocatoriaId: selectedConvId || '' });
     onClose();
   };
 
@@ -716,8 +741,8 @@ function PizarraManager() {
         <Button leftIcon={<FiPlus />} size="sm" onClick={openNew}>Nuevo Elemento</Button>
       </Flex>
       <VStack spacing={4} align="stretch">
-        {oposicionesPizarra.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay elementos en la pizarra</Text>}
-        {oposicionesPizarra.map((item) => (
+        {filteredPizarra.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay elementos en la pizarra</Text>}
+        {filteredPizarra.map((item) => (
           <Box key={item.id} p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
             <Flex justify="space-between" align="start">
               <Box flex={1}>
@@ -784,28 +809,53 @@ function PizarraManager() {
 }
 
 // ===== ESTADISTICAS OPOSICIONES =====
-function EstadisticasOposiciones() {
+function EstadisticasOposiciones({ selectedConvId }) {
   const { studySessions, testResults, temarios, supuestosPracticos, simulacros } = useStore();
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const { textColor, gridColor, tooltipBg, tooltipBorder, tooltipColor } = useRechartStyles();
 
-  const totalSeconds = studySessions.reduce((a, s) => a + (s.seconds || (s.duration || 0) * 60), 0);
+  const filteredStudySessions = useMemo(() =>
+    studySessions.filter((s) => !selectedConvId || s.convocatoriaId === selectedConvId),
+    [studySessions, selectedConvId]
+  );
+
+  const filteredTestResults = useMemo(() =>
+    testResults.filter((r) => !selectedConvId || r.convocatoriaId === selectedConvId),
+    [testResults, selectedConvId]
+  );
+
+  const filteredTemarios = useMemo(() =>
+    temarios.filter((t) => !selectedConvId || t.convocatoriaId === selectedConvId),
+    [temarios, selectedConvId]
+  );
+
+  const filteredSupuestosPracticos = useMemo(() =>
+    supuestosPracticos.filter((sp) => !selectedConvId || sp.convocatoriaId === selectedConvId),
+    [supuestosPracticos, selectedConvId]
+  );
+
+  const filteredSimulacros = useMemo(() =>
+    simulacros.filter((s) => !selectedConvId || s.convocatoriaId === selectedConvId),
+    [simulacros, selectedConvId]
+  );
+
+  const totalSeconds = filteredStudySessions.reduce((a, s) => a + (s.seconds || (s.duration || 0) * 60), 0);
   const totalHours = +(totalSeconds / 3600).toFixed(1);
-  const avgTestScore = testResults.length > 0 ? Math.round(testResults.reduce((a, r) => a + r.percentage, 0) / testResults.length) : 0;
-  const totalTopics = temarios.reduce((a, t) => a + (t.topics || []).length, 0);
-  const completedTopics = temarios.reduce((a, t) => a + (t.topics || []).filter((tp) => tp.completed).length, 0);
+  const avgTestScore = filteredTestResults.length > 0 ? Math.round(filteredTestResults.reduce((a, r) => a + r.percentage, 0) / filteredTestResults.length) : 0;
+  const totalTopics = filteredTemarios.reduce((a, t) => a + (t.topics || []).length, 0);
+  const completedTopics = filteredTemarios.reduce((a, t) => a + (t.topics || []).filter((tp) => tp.completed).length, 0);
   const pctCompleted = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
   const avgSupuestos = useMemo(() => {
-    const puntuaciones = supuestosPracticos.filter((sp) => sp.puntuacion !== '' && sp.puntuacion !== undefined).map((sp) => Number(sp.puntuacion));
+    const puntuaciones = filteredSupuestosPracticos.filter((sp) => sp.puntuacion !== '' && sp.puntuacion !== undefined).map((sp) => Number(sp.puntuacion));
     return puntuaciones.length > 0 ? +(puntuaciones.reduce((a, b) => a + b, 0) / puntuaciones.length).toFixed(1) : 0;
-  }, [supuestosPracticos]);
+  }, [filteredSupuestosPracticos]);
 
   const avgSimulacros = useMemo(() => {
-    const puntuaciones = simulacros.filter((s) => s.puntuacion !== '' && s.puntuacion !== undefined).map((s) => Number(s.puntuacion));
+    const puntuaciones = filteredSimulacros.filter((s) => s.puntuacion !== '' && s.puntuacion !== undefined).map((s) => Number(s.puntuacion));
     return puntuaciones.length > 0 ? +(puntuaciones.reduce((a, b) => a + b, 0) / puntuaciones.length).toFixed(1) : 0;
-  }, [simulacros]);
+  }, [filteredSimulacros]);
 
   const combinedAvg = useMemo(() => {
     const allScores = [];
@@ -816,8 +866,8 @@ function EstadisticasOposiciones() {
   }, [avgTestScore, avgSupuestos, avgSimulacros]);
 
   const pieData = [
-    { name: 'Aciertos Tests', value: testResults.reduce((a, r) => a + r.correct, 0) },
-    { name: 'Fallos Tests', value: testResults.reduce((a, r) => a + (r.total - r.correct), 0) },
+    { name: 'Aciertos Tests', value: filteredTestResults.reduce((a, r) => a + r.correct, 0) },
+    { name: 'Fallos Tests', value: filteredTestResults.reduce((a, r) => a + (r.total - r.correct), 0) },
   ].filter((d) => d.value > 0);
   const COLORS = ['#48BB78', '#F56565'];
 
@@ -828,7 +878,7 @@ function EstadisticasOposiciones() {
           <Stat><StatLabel>Tiempo Total</StatLabel><StatNumber>{totalHours}h</StatNumber></Stat>
         </Box>
         <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-          <Stat><StatLabel>Sesiones</StatLabel><StatNumber>{studySessions.length}</StatNumber></Stat>
+          <Stat><StatLabel>Sesiones</StatLabel><StatNumber>{filteredStudySessions.length}</StatNumber></Stat>
         </Box>
         <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
           <Stat><StatLabel>Media Tests</StatLabel><StatNumber color={avgTestScore >= 70 ? 'green.500' : 'red.500'}>{avgTestScore}%</StatNumber></Stat>
@@ -860,11 +910,11 @@ function EstadisticasOposiciones() {
       <Divider />
 
       <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-        {studySessions.length > 0 && (
+        {filteredStudySessions.length > 0 && (
           <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
             <Text fontWeight="bold" mb={4}>Sesiones de Estudio</Text>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={studySessions.slice(-10)}>
+              <BarChart data={filteredStudySessions.slice(-10)}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: textColor }} />
                 <YAxis tick={{ fontSize: 11, fill: textColor }} />
@@ -896,40 +946,54 @@ function EstadisticasOposiciones() {
 
 // ===== MAIN OPOSICIONES COMPONENT =====
 export default function Oposiciones() {
-  const { addStudySession, addXP } = useStore();
+  const { addStudySession, addXP, convocatoria } = useStore();
+  const [selectedConvId, setSelectedConvId] = useState('');
 
   const handleStudyRegister = (data) => {
     const temario = useStore.getState().temarios.find((t) => t.id === data.temarioId);
     const topic = temario ? (temario.topics || []).find((t) => t.id === data.topicId) : null;
-    addStudySession({ ...data, type: 'study', topicName: topic?.name || '', temarioName: temario?.name || '' });
+    addStudySession({ ...data, type: 'study', topicName: topic?.name || '', temarioName: temario?.name || '', convocatoriaId: selectedConvId || '' });
     addXP(10);
   };
 
   return (
-    <Tabs variant="enclosed" colorScheme="blue">
-      <TabList>
-        <Tab><FiFileText style={{ marginRight: 8 }} />Convocatoria</Tab>
-        <Tab><FiBook style={{ marginRight: 8 }} />Temarios</Tab>
-        <Tab><FiCheckCircle style={{ marginRight: 8 }} />Tests</Tab>
-        <Tab><FiEdit style={{ marginRight: 8 }} />Supuestos Prácticos</Tab>
-        <Tab><FiAward style={{ marginRight: 8 }} />Simulacros</Tab>
-        <Tab><FiGrid style={{ marginRight: 8 }} />Pizarra</Tab>
-        <Tab><FiBarChart2 style={{ marginRight: 8 }} />Estadísticas</Tab>
-      </TabList>
-      <TabPanels>
-        <TabPanel px={0}><ConvocatoriaManager /></TabPanel>
-        <TabPanel px={0}>
-          <VStack spacing={6} align="stretch">
-            <Cronometro onRegister={handleStudyRegister} />
-            <TemarioManager />
-          </VStack>
-        </TabPanel>
-        <TabPanel px={0}><TestManager /></TabPanel>
-        <TabPanel px={0}><SupuestosPracticosManager /></TabPanel>
-        <TabPanel px={0}><SimulacrosManager /></TabPanel>
-        <TabPanel px={0}><PizarraManager /></TabPanel>
-        <TabPanel px={0}><EstadisticasOposiciones /></TabPanel>
-      </TabPanels>
-    </Tabs>
+    <Box>
+      <Box mb={4}>
+        <FormControl maxW="300px">
+          <FormLabel fontWeight="bold">Convocatoria activa</FormLabel>
+          <Select value={selectedConvId} onChange={(e) => setSelectedConvId(e.target.value)}>
+            <option value="">Todas</option>
+            {convocatoria.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre || 'Sin nombre'}</option>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+      <Tabs variant="enclosed" colorScheme="blue">
+        <TabList>
+          <Tab><FiFileText style={{ marginRight: 8 }} />Convocatoria</Tab>
+          <Tab><FiBook style={{ marginRight: 8 }} />Temarios</Tab>
+          <Tab><FiCheckCircle style={{ marginRight: 8 }} />Tests</Tab>
+          <Tab><FiEdit style={{ marginRight: 8 }} />Supuestos Prácticos</Tab>
+          <Tab><FiAward style={{ marginRight: 8 }} />Simulacros</Tab>
+          <Tab><FiGrid style={{ marginRight: 8 }} />Pizarra</Tab>
+          <Tab><FiBarChart2 style={{ marginRight: 8 }} />Estadísticas</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel px={0}><ConvocatoriaManager /></TabPanel>
+          <TabPanel px={0}>
+            <VStack spacing={6} align="stretch">
+              <Cronometro onRegister={handleStudyRegister} />
+              <TemarioManager selectedConvId={selectedConvId} />
+            </VStack>
+          </TabPanel>
+          <TabPanel px={0}><TestManager selectedConvId={selectedConvId} /></TabPanel>
+          <TabPanel px={0}><SupuestosPracticosManager selectedConvId={selectedConvId} /></TabPanel>
+          <TabPanel px={0}><SimulacrosManager selectedConvId={selectedConvId} /></TabPanel>
+          <TabPanel px={0}><PizarraManager selectedConvId={selectedConvId} /></TabPanel>
+          <TabPanel px={0}><EstadisticasOposiciones selectedConvId={selectedConvId} /></TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Box>
   );
 }

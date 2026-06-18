@@ -9,12 +9,13 @@ import { format, subDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 
 const StatCard = ({ icon, label, value, change, color, sub }) => {
   const bg = useColorModeValue('white', 'gray.800');
+  const titleColor = useColorModeValue('gray.800', 'gray.100');
   return (
     <Box bg={bg} p={5} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')} _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }} transition="all 0.2s">
       <Flex justify="space-between" align="start">
         <Box>
           <Text fontSize="sm" color="gray.500">{label}</Text>
-          <Text fontSize="2xl" fontWeight="bold">{value}</Text>
+          <Text fontSize="2xl" fontWeight="bold" color={titleColor}>{value}</Text>
           {sub && <Text fontSize="xs" color="gray.400">{sub}</Text>}
         </Box>
         <Circle size="45px" bg={`${color}15`}>
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const rowBg = useColorModeValue('gray.50', 'gray.700');
   const { textColor, gridColor, tooltipBg, tooltipBorder, tooltipColor } = useRechartStyles();
+  const titleColor = useColorModeValue('gray.800', 'gray.100');
 
   const todayTasks = useMemo(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -66,7 +68,7 @@ export default function Dashboard() {
 
       <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={5} mb={5}>
         <Box bg={bg} p={5} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-          <Text fontWeight="bold" mb={4}>Productividad Semanal</Text>
+          <Text fontWeight="bold" mb={4} color={titleColor}>Productividad Semanal</Text>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={productivityData}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -82,11 +84,11 @@ export default function Dashboard() {
 
         <VStack spacing={5} align="stretch">
           <Box bg={bg} p={5} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-            <Text fontWeight="bold" mb={3}>Nivel y Progreso</Text>
+            <Text fontWeight="bold" mb={3} color={titleColor}>Nivel y Progreso</Text>
             <Flex align="center" gap={3} mb={3}>
               <Circle size="50px" bg="brand.500" color="white" fontWeight="bold" fontSize="xl">{level}</Circle>
               <Box flex={1}>
-                <Text fontSize="sm">Nivel {level}</Text>
+                <Text fontSize="sm" color={titleColor}>Nivel {level}</Text>
                 <Progress value={xp % 100} colorScheme="blue" size="sm" borderRadius="full" />
                 <Text fontSize="xs" color="gray.500">{100 - (xp % 100)} XP para nivel {level + 1}</Text>
               </Box>
@@ -97,12 +99,12 @@ export default function Dashboard() {
 
       <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={5}>
         <Box bg={bg} p={5} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-          <Text fontWeight="bold" mb={3}>Tareas de Hoy ({todayTasks.length})</Text>
+          <Text fontWeight="bold" mb={3} color={titleColor}>Tareas de Hoy ({todayTasks.length})</Text>
           <VStack align="stretch" spacing={2} maxH="200px" overflowY="auto">
             {todayTasks.length === 0 && <Text color="gray.500" fontSize="sm">No hay tareas para hoy</Text>}
             {todayTasks.slice(0, 5).map((t) => (
               <Flex key={t.id} p={2} bg={rowBg} borderRadius="md" justify="space-between" align="center">
-                <Text fontSize="sm" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1}>{t.title}</Text>
+                <Text fontSize="sm" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1} color={titleColor}>{t.title}</Text>
                 <Badge colorScheme={t.completed ? 'green' : 'blue'} fontSize="xs">{t.hour || '--:--'}</Badge>
               </Flex>
             ))}
@@ -110,13 +112,13 @@ export default function Dashboard() {
         </Box>
 
         <Box bg={bg} p={5} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-          <Text fontWeight="bold" mb={3}>Actividad Reciente</Text>
+          <Text fontWeight="bold" mb={3} color={titleColor}>Actividad Reciente</Text>
           <VStack align="stretch" spacing={2} maxH="200px" overflowY="auto">
             {[...studySessions, ...gymSessions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5).map((s) => (
               <Flex key={s.id} p={2} bg={rowBg} borderRadius="md" gap={2} align="center">
                 <Circle size="8px" bg={s.type === 'study' ? 'blue.400' : 'red.400'} />
                 <Box flex={1}>
-                  <Text fontSize="sm">{s.topicName || s.routineName || 'Actividad'}</Text>
+                  <Text fontSize="sm" color={titleColor}>{s.topicName || s.routineName || 'Actividad'}</Text>
                   <Text fontSize="xs" color="gray.500">{s.duration || 0} min - {formatDate(s.createdAt, 'dd/MM HH:mm')}</Text>
                 </Box>
               </Flex>

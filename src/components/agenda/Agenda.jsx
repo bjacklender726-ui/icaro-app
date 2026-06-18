@@ -7,6 +7,7 @@ import { format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths, sta
 import { es } from 'date-fns/locale';
 
 const HOUR_HEIGHT = 50;
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export default function Agenda() {
   const store = useStore();
@@ -25,6 +26,7 @@ export default function Agenda() {
   const todayBg = useColorModeValue('blue.50', 'blue.900');
   const todayHoverBg = useColorModeValue('blue.100', 'blue.800');
   const cellHoverBg = useColorModeValue('gray.100', 'gray.700');
+  const labelColor = useColorModeValue('gray.500', 'gray.400');
 
   const [form, setForm] = useState({
     title: '', description: '', hour: '08:00', hourEnd: '09:00',
@@ -43,18 +45,6 @@ export default function Agenda() {
       return true;
     }).sort((a, b) => (a.hour || '').localeCompare(b.hour || ''));
   }, [agendaTasks, dateStr, filterModule]);
-
-  const weekDays = useMemo(() => {
-    const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
-    const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
-    return eachDayOfInterval({ start, end });
-  }, [selectedDate]);
-
-  const monthDays = useMemo(() => {
-    const start = startOfMonth(selectedDate);
-    const end = endOfMonth(selectedDate);
-    return eachDayOfInterval({ start, end });
-  }, [selectedDate]);
 
   const monthWeeks = useMemo(() => {
     const monthStart = startOfMonth(selectedDate);
@@ -166,8 +156,6 @@ export default function Agenda() {
     return Math.max(((h2 * 60 + m2) - (h1 * 60 + m1)) / 60 * HOUR_HEIGHT, 25);
   };
 
-  const HOURS = Array.from({ length: 24 }, (_, i) => i);
-
   return (
     <Box>
       <Flex justify="space-between" align="center" mb={4} wrap="wrap" gap={3}>
@@ -210,18 +198,17 @@ export default function Agenda() {
       </Tabs>
 
       {viewMode === 'day' && (
-        <Box bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} overflow="hidden" maxH="calc(100vh - 220px)">
-          <Flex h="100%">
-            <Box flex={1} overflowY="auto" display="flex">
-              <Box borderRight="1px solid" borderColor={borderColor} flexShrink={0}>
+        <Flex bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} overflow="hidden" maxH="calc(100vh - 220px)">
+          <Box flex={1} overflowY="auto" position="relative">
+            <Grid templateColumns="70px 1fr">
+              <Box>
                 {HOURS.map((h) => (
-                  <Box key={h} h={`${HOUR_HEIGHT}px`} px={2} py={1} borderBottom="1px solid" borderColor={borderColor}>
-                    <Text fontSize="xs" color="gray.500" fontWeight="500">{`${h.toString().padStart(2, '0')}:00`}</Text>
+                  <Box key={h} h={`${HOUR_HEIGHT}px`} px={2} display="flex" alignItems="flex-start" justifyContent="flex-end" borderBottom="1px solid" borderColor={borderColor}>
+                    <Text fontSize="xs" color={labelColor} fontWeight="500" pt={0}>{`${h.toString().padStart(2, '0')}:00`}</Text>
                   </Box>
                 ))}
               </Box>
-
-              <Box position="relative" flex={1}>
+              <Box position="relative">
                 {HOURS.map((h) => (
                   <Box key={h} h={`${HOUR_HEIGHT}px`} borderBottom="1px solid" borderColor={borderColor} _hover={{ bg: hoverBg }} cursor="pointer"
                     onClick={() => openNew(`${h.toString().padStart(2, '0')}:00`)} />
@@ -267,41 +254,41 @@ export default function Agenda() {
                   );
                 })()}
               </Box>
-            </Box>
+            </Grid>
+          </Box>
 
-            <Box borderLeft="1px solid" borderColor={borderColor} p={3} overflowY="auto" w="240px" flexShrink={0}>
-              <Text fontWeight="bold" fontSize="sm" mb={3}>Avances del Día</Text>
-              {moduleAdvances.length === 0 && <Text color="gray.500" fontSize="xs">Sin avances hoy</Text>}
-              <VStack align="stretch" spacing={2}>
-                {moduleAdvances.map((a, i) => (
-                  <Flex key={i} p={2} bg={hoverBg} borderRadius="md" cursor="pointer"
-                    _hover={{ bg: rowHoverBg }}
-                    onClick={() => openNewFromAdvance(a.type)}>
-                    <Text fontSize="sm" mr={2}>{a.icon}</Text>
-                    <Box flex={1}>
-                      <Text fontSize="xs" fontWeight="bold">{a.title}</Text>
-                      {a.duration > 0 && <Text fontSize="xs" color="gray.500">{a.duration} min</Text>}
-                    </Box>
-                    <Badge size="xs" colorScheme={a.type === 'oposiciones' ? 'blue' : a.type === 'gym' ? 'red' : a.type === 'trabajo' ? 'orange' : 'purple'}>
-                      + Tarea
-                    </Badge>
-                  </Flex>
-                ))}
-              </VStack>
+          <Box borderLeft="1px solid" borderColor={borderColor} p={3} overflowY="auto" w="240px" flexShrink={0}>
+            <Text fontWeight="bold" fontSize="sm" mb={3}>Avances del Día</Text>
+            {moduleAdvances.length === 0 && <Text color="gray.500" fontSize="xs">Sin avances hoy</Text>}
+            <VStack align="stretch" spacing={2}>
+              {moduleAdvances.map((a, i) => (
+                <Flex key={i} p={2} bg={hoverBg} borderRadius="md" cursor="pointer"
+                  _hover={{ bg: rowHoverBg }}
+                  onClick={() => openNewFromAdvance(a.type)}>
+                  <Text fontSize="sm" mr={2}>{a.icon}</Text>
+                  <Box flex={1}>
+                    <Text fontSize="xs" fontWeight="bold">{a.title}</Text>
+                    {a.duration > 0 && <Text fontSize="xs" color="gray.500">{a.duration} min</Text>}
+                  </Box>
+                  <Badge size="xs" colorScheme={a.type === 'oposiciones' ? 'blue' : a.type === 'gym' ? 'red' : a.type === 'trabajo' ? 'orange' : 'purple'}>
+                    + Tarea
+                  </Badge>
+                </Flex>
+              ))}
+            </VStack>
 
-              <Text fontWeight="bold" fontSize="sm" mt={4} mb={2}>Tareas ({dayTasks.length})</Text>
-              <VStack align="stretch" spacing={1}>
-                {dayTasks.map((t) => (
-                  <Flex key={t.id} p={1.5} bg={hoverBg} borderRadius="md"
-                    justify="space-between" align="center" cursor="pointer" onClick={() => openEdit(t)}>
-                    <Text fontSize="xs" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1} noOfLines={1}>{t.title}</Text>
-                    <Badge size="xs" colorScheme={t.completed ? 'green' : 'blue'}>{t.hour}</Badge>
-                  </Flex>
-                ))}
-              </VStack>
-            </Box>
-          </Flex>
-        </Box>
+            <Text fontWeight="bold" fontSize="sm" mt={4} mb={2}>Tareas ({dayTasks.length})</Text>
+            <VStack align="stretch" spacing={1}>
+              {dayTasks.map((t) => (
+                <Flex key={t.id} p={1.5} bg={hoverBg} borderRadius="md"
+                  justify="space-between" align="center" cursor="pointer" onClick={() => openEdit(t)}>
+                  <Text fontSize="xs" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1} noOfLines={1}>{t.title}</Text>
+                  <Badge size="xs" colorScheme={t.completed ? 'green' : 'blue'}>{t.hour}</Badge>
+                </Flex>
+              ))}
+            </VStack>
+          </Box>
+        </Flex>
       )}
 
       {viewMode === 'week' && (

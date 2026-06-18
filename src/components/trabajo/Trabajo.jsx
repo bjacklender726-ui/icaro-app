@@ -7,13 +7,33 @@ import { formatDate, JOB_STATUSES } from '../../utils/helpers';
 import { useRechartStyles } from '../../utils/rechartStyles';
 import { format, subDays } from 'date-fns';
 
+const PORTAL_OPTIONS = ['LinkedIn', 'InfoJobs', 'Indeed', 'Glassdoor', 'Tecnoempleo', 'InfoTjobs', 'JobandTalent', 'Welcome to the Jungle', 'StepStone', 'Otro'];
+const CV_OPTIONS = ['CV Desarrollo Web', 'CV Consultor Tecnológico', 'CV Atención al Cliente', 'Personalizado'];
+
 function OfertaForm({ isOpen, onClose, editing }) {
   const { addJobOffer, updateJobOffer } = useStore();
   const [form, setForm] = useState({ company: '', jobName: '', portal: '', date: format(new Date(), 'yyyy-MM-dd'), status: 'enviada', cv: '', modality: 'presencial', location: '', technologies: '', notes: '' });
+  const [customPortal, setCustomPortal] = useState('');
+  const [customCV, setCustomCV] = useState('');
 
   React.useEffect(() => {
-    if (editing) setForm({ ...editing });
-    else setForm({ company: '', jobName: '', portal: '', date: format(new Date(), 'yyyy-MM-dd'), status: 'enviada', cv: '', modality: 'presencial', location: '', technologies: '', notes: '' });
+    if (editing) {
+      setForm({ ...editing });
+      if (PORTAL_OPTIONS.includes(editing.portal)) {
+        setCustomPortal('');
+      } else {
+        setCustomPortal(editing.portal || '');
+      }
+      if (CV_OPTIONS.includes(editing.cv)) {
+        setCustomCV('');
+      } else {
+        setCustomCV(editing.cv || '');
+      }
+    } else {
+      setForm({ company: '', jobName: '', portal: '', date: format(new Date(), 'yyyy-MM-dd'), status: 'enviada', cv: '', modality: 'presencial', location: '', technologies: '', notes: '' });
+      setCustomPortal('');
+      setCustomCV('');
+    }
   }, [editing, isOpen]);
 
   const save = () => {
@@ -33,7 +53,25 @@ function OfertaForm({ isOpen, onClose, editing }) {
             <FormControl><FormLabel>Nombre de la Oferta</FormLabel><Input value={form.jobName} onChange={(e) => setForm((f) => ({ ...f, jobName: e.target.value }))} placeholder="Ej: Frontend Developer Senior" /></FormControl>
             <FormControl><FormLabel>Empresa</FormLabel><Input value={form.company} onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))} /></FormControl>
             <HStack w="100%">
-              <FormControl><FormLabel>Portal</FormLabel><Input value={form.portal} onChange={(e) => setForm((f) => ({ ...f, portal: e.target.value }))} placeholder="LinkedIn, InfoJobs..." /></FormControl>
+              <FormControl><FormLabel>Portal</FormLabel>
+                <Select
+                  value={PORTAL_OPTIONS.includes(form.portal) ? form.portal : 'Otro'}
+                  onChange={(e) => {
+                    if (e.target.value === 'Otro') {
+                      setForm((f) => ({ ...f, portal: customPortal || '' }));
+                    } else {
+                      setCustomPortal('');
+                      setForm((f) => ({ ...f, portal: e.target.value }));
+                    }
+                  }}
+                >
+                  <option value="" disabled>Seleccionar portal...</option>
+                  {PORTAL_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                </Select>
+                {(!PORTAL_OPTIONS.includes(form.portal)) && (
+                  <Input mt={2} value={customPortal} onChange={(e) => { setCustomPortal(e.target.value); setForm((f) => ({ ...f, portal: e.target.value })); }} placeholder="Nombre del portal..." />
+                )}
+              </FormControl>
               <FormControl><FormLabel>Fecha</FormLabel><Input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} /></FormControl>
             </HStack>
             <HStack w="100%">
@@ -48,7 +86,25 @@ function OfertaForm({ isOpen, onClose, editing }) {
               <FormControl><FormLabel>Estado</FormLabel><Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
                 {Object.entries(JOB_STATUSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </Select></FormControl>
-              <FormControl><FormLabel>CV Usado</FormLabel><Input value={form.cv} onChange={(e) => setForm((f) => ({ ...f, cv: e.target.value }))} /></FormControl>
+              <FormControl><FormLabel>CV Usado</FormLabel>
+                <Select
+                  value={CV_OPTIONS.includes(form.cv) ? form.cv : 'Personalizado'}
+                  onChange={(e) => {
+                    if (e.target.value === 'Personalizado') {
+                      setForm((f) => ({ ...f, cv: customCV || '' }));
+                    } else {
+                      setCustomCV('');
+                      setForm((f) => ({ ...f, cv: e.target.value }));
+                    }
+                  }}
+                >
+                  <option value="" disabled>Seleccionar CV...</option>
+                  {CV_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </Select>
+                {(!CV_OPTIONS.includes(form.cv)) && (
+                  <Input mt={2} value={customCV} onChange={(e) => { setCustomCV(e.target.value); setForm((f) => ({ ...f, cv: e.target.value })); }} placeholder="Nombre del CV..." />
+                )}
+              </FormControl>
             </HStack>
             <FormControl><FormLabel>Tecnologías / Requisitos</FormLabel><Textarea value={form.technologies} onChange={(e) => setForm((f) => ({ ...f, technologies: e.target.value }))} placeholder="React, Node.js, TypeScript, SQL..." /></FormControl>
             <FormControl><FormLabel>Notas</FormLabel><Textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} /></FormControl>

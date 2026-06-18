@@ -45,7 +45,7 @@ const SUGGESTION_COLORS = ['blue', 'green', 'purple', 'orange', 'teal', 'pink', 
 
 function ProjectManager() {
   const store = useStore();
-  const { projects, addProject, updateProject, deleteProject, addProjectLog } = store;
+  const { projects, addProject, updateProject, deleteProject, addProjectLog, addAgendaTask, addNotification } = store;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editing, setEditing] = useState(null);
   const [expandedProject, setExpandedProject] = useState(null);
@@ -54,7 +54,7 @@ function ProjectManager() {
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const [customTechs, setCustomTechs] = useState([]);
   const [generateSubtasks, setGenerateSubtasks] = useState(false);
-  const [taskForm, setTaskForm] = useState({ name: '', description: '' });
+  const [taskForm, setTaskForm] = useState({ name: '', description: '', estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
   const bg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const taskRowBg = useColorModeValue('gray.50', 'gray.700');
@@ -85,8 +85,17 @@ function ProjectManager() {
 
   const addTask = () => {
     if (taskForm.name) {
-      setForm((f) => ({ ...f, tasks: [...f.tasks, { ...taskForm, id: Date.now().toString(), completed: false }] }));
-      setTaskForm({ name: '', description: '' });
+      const newTask = {
+        id: Date.now().toString(),
+        name: taskForm.name,
+        description: taskForm.description,
+        completed: false,
+        estimatedHours: parseFloat(taskForm.estimatedHours) || 1,
+        startDate: taskForm.startDate || format(new Date(), 'yyyy-MM-dd'),
+        endDate: taskForm.endDate || '',
+      };
+      setForm((f) => ({ ...f, tasks: [...f.tasks, newTask] }));
+      setTaskForm({ name: '', description: '', estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
     }
   };
 
@@ -171,6 +180,7 @@ function ProjectManager() {
           const hours = getProjectHours(p.id);
           const completedTasks = (p.tasks || []).filter((t) => t.completed).length;
           const totalTasks = (p.tasks || []).length;
+          const totalEstimated = (p.tasks || []).reduce((a, t) => a + (parseFloat(t.estimatedHours) || 0), 0);
           const isExpanded = expandedProject === p.id;
           return (
             <Box key={p.id} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
@@ -178,7 +188,7 @@ function ProjectManager() {
                 <HStack flex={1}>
                   <IconButton icon={isExpanded ? <FiChevronDown /> : <FiChevronRight />} size="xs" variant="ghost" />
                   <Box flex={1}>
-                    <HStack><Text fontWeight="bold">{p.name}</Text><Badge colorScheme="green">{hours.toFixed(1)}h</Badge></HStack>
+                    <HStack><Text fontWeight="bold">{p.name}</Text><Badge colorScheme="green">{hours.toFixed(1)}h</Badge>{totalEstimated > 0 && <Badge colorScheme="purple">{totalEstimated}h est.</Badge>}</HStack>
                     <Text fontSize="xs" color="gray.500">{completedTasks}/{totalTasks} tareas · {p.description || ''}</Text>
                     {totalTasks > 0 && <Progress value={(completedTasks / totalTasks) * 100} size="sm" colorScheme="green" mt={2} borderRadius="full" />}
                   </Box>
@@ -205,16 +215,33 @@ function ProjectManager() {
                   {(p.tasks || []).length === 0 && <Text color="gray.500" fontSize="sm">Sin subtareas</Text>}
                   {(p.tasks || []).map((t) => {
                     const taskH = getTaskHours(p.id, t.id);
+                    const est = parseFloat(t.estimatedHours) || 0;
                     return (
                       <Flex key={t.id} p={2} bg={taskRowBg} borderRadius="md" justify="space-between" align="center" mb={1}>
-                        <HStack>
+                        <HStack flex={1}>
                           <Box w="14px" h="14px" borderRadius="3px" border="2px solid" borderColor={t.completed ? 'green.500' : taskBorder} bg={t.completed ? 'green.500' : 'transparent'} cursor="pointer" onClick={() => {
                             const updatedTasks = p.tasks.map((tk) => tk.id === t.id ? { ...tk, completed: !tk.completed } : tk);
                             updateProject(p.id, { tasks: updatedTasks });
+                            if (!t.completed) {
+                              addNotification({ title: 'Subtarea completada', message: `"${t.name}" completada en proyecto "${p.name}"`, type: 'success', section: 'proyectos' });
+                            }
                           }} />
-                          <Text fontSize="sm" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1}>{t.name}</Text>
-                          {taskH > 0 && <Badge size="xs" colorScheme="blue">{taskH.toFixed(1)}h</Badge>}
+                          <Box>
+                            <Text fontSize="sm" textDecoration={t.completed ? 'line-through' : 'none'} opacity={t.completed ? 0.5 : 1}>{t.name}</Text>
+                            <HStack spacing={1} mt={0.5}>
+                              {est > 0 && <Badge size="xs" colorScheme="blue">{est}h est.</Badge>}
+                              {taskH > 0 && <Badge size="xs" colorScheme="green">{taskH}h registradas</Badge>}
+                              {t.startDate && <Badge size="xs" colorScheme="gray">Inicio: {t.startDate}</Badge>}
+                              {t.endDate && <Badge size="xs" colorScheme="orange">Fin: {t.endDate}</Badge>}
+                            </HStack>
+                          </Box>
                         </HStack>
+                        <Tooltip label="Activar en Agenda">
+                          <IconButton icon={<FiClock />} size="xs" variant="ghost" colorScheme="purple" onClick={() => {
+                            addAgendaTask({ title: t.name, description: t.description || `Subtarea de ${p.name}`, date: t.startDate || format(new Date(), 'yyyy-MM-dd'), completed: false, section: 'proyectos', type: 'task' });
+                            addNotification({ title: 'Tarea enviada a Agenda', message: `"${t.name}" agregada a la agenda`, type: 'info', section: 'proyectos' });
+                          }} />
+                        </Tooltip>
                       </Flex>
                     );
                   })}
@@ -397,10 +424,22 @@ function ProjectManager() {
                     <Input size="sm" placeholder="Nombre subtarea" value={taskForm.name} onChange={(e) => setTaskForm((t) => ({ ...t, name: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && addTask()} />
                     <Button size="sm" onClick={addTask}>Agregar</Button>
                   </HStack>
+                  <HStack mb={2} spacing={2}>
+                    <FormControl flex={1}><FormLabel fontSize="xs">Horas est.</FormLabel><Input size="sm" type="number" min={0.5} step={0.5} value={taskForm.estimatedHours} onChange={(e) => setTaskForm((t) => ({ ...t, estimatedHours: e.target.value }))} /></FormControl>
+                    <FormControl flex={1}><FormLabel fontSize="xs">Inicio</FormLabel><Input size="sm" type="date" value={taskForm.startDate} onChange={(e) => setTaskForm((t) => ({ ...t, startDate: e.target.value }))} /></FormControl>
+                    <FormControl flex={1}><FormLabel fontSize="xs">Fin</FormLabel><Input size="sm" type="date" value={taskForm.endDate} onChange={(e) => setTaskForm((t) => ({ ...t, endDate: e.target.value }))} /></FormControl>
+                  </HStack>
                   <VStack align="stretch" maxH="200px" overflowY="auto">
                     {form.tasks.map((t) => (
-                      <Flex key={t.id} p={2} bg={taskRowBg} borderRadius="md" justify="space-between">
-                        <Text fontSize="sm">{t.name}</Text>
+                      <Flex key={t.id} p={2} bg={taskRowBg} borderRadius="md" justify="space-between" align="center">
+                        <VStack align="start" spacing={0}>
+                          <Text fontSize="sm">{t.name}</Text>
+                          <HStack spacing={2} mt={0.5}>
+                            {t.estimatedHours > 0 && <Badge size="xs" colorScheme="blue">{t.estimatedHours}h</Badge>}
+                            {t.startDate && <Badge size="xs" colorScheme="green">Inicio: {t.startDate}</Badge>}
+                            {t.endDate && <Badge size="xs" colorScheme="orange">Fin: {t.endDate}</Badge>}
+                          </HStack>
+                        </VStack>
                         <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" onClick={() => removeTask(t.id)} />
                       </Flex>
                     ))}
@@ -633,15 +672,20 @@ function PizarraProyectos({ projectId }) {
   };
 
   const generateSubtasks = () => {
-    if (!project) return;
+    console.log('generateSubtasks called', { project, board });
+    if (!project || !board || board.length === 0) return;
     const existingTasks = project.tasks || [];
     const newTasks = board.map((item) => ({
       id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
-      name: item.title,
-      description: item.type === 'text' ? item.content : `${item.type}: ${item.content}`,
+      name: item.title || 'Sin título',
+      description: item.content || '',
       completed: false,
+      estimatedHours: 1,
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      endDate: '',
     }));
     updateProject(projectId, { tasks: [...existingTasks, ...newTasks] });
+    console.log('Subtasks generated:', newTasks.length);
   };
 
   const handleMouseDown = (e, itemId) => {

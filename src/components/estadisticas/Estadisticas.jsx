@@ -13,6 +13,7 @@ export default function Estadisticas() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { textColor, gridColor, tooltipBg, tooltipBorder, tooltipColor } = useRechartStyles();
+  const titleColor = useColorModeValue('gray.800', 'gray.100');
 
   const last30Days = useMemo(() => {
     return Array.from({ length: 30 }, (_, i) => {
@@ -56,7 +57,7 @@ export default function Estadisticas() {
   return (
     <Box>
       <Flex justify="space-between" align="center" mb={6}>
-        <Text fontWeight="bold" fontSize="xl">Estadísticas Globales</Text>
+        <Text fontWeight="bold" fontSize="xl" color={titleColor}>Estadísticas Globales</Text>
         <Button colorScheme="red" variant="outline" size="sm" onClick={onOpen}>Resetear Estadísticas</Button>
       </Flex>
 
@@ -77,7 +78,7 @@ export default function Estadisticas() {
 
       <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={5} mb={5}>
         <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-          <Text fontWeight="bold" mb={3}>Actividad - Últimos 30 días</Text>
+          <Text fontWeight="bold" mb={3} color={titleColor}>Actividad - Últimos 30 días</Text>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={last30Days}>
               <defs>
@@ -98,7 +99,7 @@ export default function Estadisticas() {
 
         <VStack spacing={5} align="stretch">
           <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-            <Text fontWeight="bold" mb={3}>Distribución por Módulo</Text>
+            <Text fontWeight="bold" mb={3} color={titleColor}>Distribución por Módulo</Text>
             <ResponsiveContainer width="100%" height={150}>
               <PieChart>
                 <Pie data={moduleDistribution.filter((m) => m.hours > 0)} cx="50%" cy="50%" innerRadius={35} outerRadius={55} dataKey="hours">
@@ -110,20 +111,20 @@ export default function Estadisticas() {
             <VStack align="stretch" mt={2}>
               {moduleDistribution.map((m, i) => (
                 <HStack key={m.module} justify="space-between">
-                  <HStack><Box w="10px" h="10px" borderRadius="2px" bg={COLORS[i]} /><Text fontSize="xs">{m.module}</Text></HStack>
-                  <Text fontSize="xs" fontWeight="bold">{m.hours}h</Text>
+                  <HStack><Box w="10px" h="10px" borderRadius="2px" bg={COLORS[i]} /><Text fontSize="xs" color={titleColor}>{m.module}</Text></HStack>
+                  <Text fontSize="xs" fontWeight="bold" color={titleColor}>{m.hours}h</Text>
                 </HStack>
               ))}
             </VStack>
           </Box>
 
           <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-            <Text fontWeight="bold" mb={3}>Días Más Productivos</Text>
+            <Text fontWeight="bold" mb={3} color={titleColor}>Días Más Productivos</Text>
             <VStack align="stretch" spacing={2}>
               {bestDays.map(([date, hours], i) => (
                 <HStack key={date} justify="space-between">
-                  <HStack><Badge colorScheme="green" fontSize="xs">#{i + 1}</Badge><Text fontSize="sm">{date}</Text></HStack>
-                  <Text fontSize="sm" fontWeight="bold">{hours}h</Text>
+                  <HStack><Badge colorScheme="green" fontSize="xs">#{i + 1}</Badge><Text fontSize="sm" color={titleColor}>{date}</Text></HStack>
+                  <Text fontSize="sm" fontWeight="bold" color={titleColor}>{hours}h</Text>
                 </HStack>
               ))}
               {bestDays.length === 0 && <Text color="gray.500" fontSize="sm">Sin datos</Text>}
@@ -133,7 +134,7 @@ export default function Estadisticas() {
       </Grid>
 
       <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-        <Text fontWeight="bold" mb={3}>Distribución Semanal</Text>
+        <Text fontWeight="bold" mb={3} color={titleColor}>Distribución Semanal</Text>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={weeklyDistribution}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -151,7 +152,7 @@ export default function Estadisticas() {
           <ModalHeader>⚠️ Resetear Estadísticas</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Text>Esta acción eliminará todos los datos de sesiones, ofertas, logs de proyectos y gamificación. No se puede deshacer.</Text>
+            <Text color={titleColor}>Esta acción eliminará todos los datos de sesiones, ofertas, logs de proyectos y gamificación. No se puede deshacer.</Text>
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onClose}>Cancelar</Button>
