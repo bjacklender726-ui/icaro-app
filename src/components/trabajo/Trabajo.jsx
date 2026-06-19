@@ -129,6 +129,19 @@ export default function Trabajo() {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [selectedMetricDay, setSelectedMetricDay] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const getWeekStart = (d) => {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    date.setDate(diff);
+    return format(date, 'yyyy-MM-dd');
+  };
+  const [selectedMetricWeek, setSelectedMetricWeek] = useState(getWeekStart(new Date()));
+  const [selectedMetricMonth, setSelectedMetricMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [filterJobName, setFilterJobName] = useState('');
+  const [filterModality, setFilterModality] = useState('');
+  const [filterTech, setFilterTech] = useState('');
+  const [sortBy, setSortBy] = useState('date-desc');
   const importRef = React.useRef(null);
 
   const exportData = (data, filename) => {
@@ -162,15 +175,29 @@ export default function Trabajo() {
   const { textColor, gridColor, tooltipBg, tooltipBorder, tooltipColor } = useRechartStyles();
 
   const filteredOffers = useMemo(() => {
-    return jobOffers.filter((o) => {
+    let result = jobOffers.filter((o) => {
       if (filterPortal && !o.portal?.toLowerCase().includes(filterPortal.toLowerCase())) return false;
       if (filterStatus && o.status !== filterStatus) return false;
       if (filterCompany && !o.company?.toLowerCase().includes(filterCompany.toLowerCase())) return false;
+      if (filterJobName && !o.jobName?.toLowerCase().includes(filterJobName.toLowerCase())) return false;
+      if (filterModality && o.modality !== filterModality) return false;
+      if (filterTech && !o.technologies?.toLowerCase().includes(filterTech.toLowerCase())) return false;
       if (filterDateFrom && o.date < filterDateFrom) return false;
       if (filterDateTo && o.date > filterDateTo) return false;
       return true;
     });
-  }, [jobOffers, filterPortal, filterStatus, filterCompany, filterDateFrom, filterDateTo]);
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc': return b.date?.localeCompare(a.date);
+        case 'date-asc': return a.date?.localeCompare(b.date);
+        case 'company-asc': return a.company?.localeCompare(b.company);
+        case 'company-desc': return b.company?.localeCompare(a.company);
+        case 'status': return (a.status || '').localeCompare(b.status || '');
+        default: return 0;
+      }
+    });
+    return result;
+  }, [jobOffers, filterPortal, filterStatus, filterCompany, filterJobName, filterModality, filterTech, filterDateFrom, filterDateTo, sortBy]);
 
   const weeklyStats = useMemo(() => {
     const now = new Date();
@@ -225,6 +252,55 @@ export default function Trabajo() {
     return { offers, byPortal: Object.entries(byPortal).map(([name, value]) => ({ name, value })), byStatus: Object.entries(byStatus).map(([name, value]) => ({ name: JOB_STATUSES[name]?.label || name, value })) };
   }, [jobOffers, selectedMetricDay]);
 
+  const weekDetailStats = useMemo(() => {
+    const weekStart = new Date(selectedMetricWeek + 'T00:00:00');
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    const offers = jobOffers.filter((o) => {
+      const d = new Date(o.date + 'T00:00:00');
+      return d >= weekStart && d < weekEnd;
+    });
+    const byPortal = {};
+    const byStatus = {};
+    const byModality = {};
+    offers.forEach((o) => {
+      byPortal[o.portal || 'Otro'] = (byPortal[o.portal || 'Otro'] || 0) + 1;
+      byStatus[o.status] = (byStatus[o.status] || 0) + 1;
+      byModality[o.modality || 'No especificado'] = (byModality[o.modality || 'No especificado'] || 0) + 1;
+    });
+    return {
+      offers,
+      byPortal: Object.entries(byPortal).map(([name, value]) => ({ name, value })),
+      byStatus: Object.entries(byStatus).map(([name, value]) => ({ name: JOB_STATUSES[name]?.label || name, value })),
+      byModality: Object.entries(byModality).map(([name, value]) => ({ name, value })),
+    };
+  }, [jobOffers, selectedMetricWeek]);
+
+  const monthDetailStats = useMemo(() => {
+    const offers = jobOffers.filter((o) => o.date?.startsWith(selectedMetricMonth));
+    const byPortal = {};
+    const byStatus = {};
+    const byModality = {};
+    const byTech = {};
+    offers.forEach((o) => {
+      byPortal[o.portal || 'Otro'] = (byPortal[o.portal || 'Otro'] || 0) + 1;
+      byStatus[o.status] = (byStatus[o.status] || 0) + 1;
+      byModality[o.modality || 'No especificado'] = (byModality[o.modality || 'No especificado'] || 0) + 1;
+      if (o.technologies) {
+        o.technologies.split(',').map(t => t.trim()).filter(Boolean).forEach(t => {
+          byTech[t] = (byTech[t] || 0) + 1;
+        });
+      }
+    });
+    return {
+      offers,
+      byPortal: Object.entries(byPortal).map(([name, value]) => ({ name, value })),
+      byStatus: Object.entries(byStatus).map(([name, value]) => ({ name: JOB_STATUSES[name]?.label || name, value })),
+      byModality: Object.entries(byModality).map(([name, value]) => ({ name, value })),
+      byTech: Object.entries(byTech).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value })),
+    };
+  }, [jobOffers, selectedMetricMonth]);
+
   const portalStats = useMemo(() => {
     const portals = {};
     jobOffers.forEach((o) => { portals[o.portal || 'Otro'] = (portals[o.portal || 'Otro'] || 0) + 1; });
@@ -258,6 +334,20 @@ export default function Trabajo() {
               </Select>
               <Input size="sm" w="140px" type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} placeholder="Desde" />
               <Input size="sm" w="140px" type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} placeholder="Hasta" />
+              <Input size="sm" w="150px" placeholder="Puesto..." value={filterJobName} onChange={(e) => setFilterJobName(e.target.value)} />
+              <Select size="sm" w="130px" placeholder="Modalidad" value={filterModality} onChange={(e) => setFilterModality(e.target.value)}>
+                <option value="remoto">Remoto</option>
+                <option value="hibrido">Híbrido</option>
+                <option value="presencial">Presencial</option>
+              </Select>
+              <Input size="sm" w="140px" placeholder="Tecnologías..." value={filterTech} onChange={(e) => setFilterTech(e.target.value)} />
+              <Select size="sm" w="150px" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="date-desc">Más recientes</option>
+                <option value="date-asc">Más antiguos</option>
+                <option value="company-asc">Empresa A-Z</option>
+                <option value="company-desc">Empresa Z-A</option>
+                <option value="status">Por estado</option>
+              </Select>
             </HStack>
             <HStack spacing={2}>
               <Button leftIcon={<FiDownload />} size="sm" variant="outline" onClick={() => exportData(filteredOffers, 'ofertas_trabajo.json')}>Exportar</Button>
@@ -268,6 +358,9 @@ export default function Trabajo() {
           </Flex>
 
           <Text fontSize="sm" color="gray.500" mb={3}>{filteredOffers.length} ofertas encontradas</Text>
+          {(filterPortal || filterStatus || filterCompany || filterJobName || filterModality || filterTech || filterDateFrom || filterDateTo) && (
+            <Button size="xs" variant="ghost" colorScheme="red" onClick={() => { setFilterPortal(''); setFilterStatus(''); setFilterCompany(''); setFilterJobName(''); setFilterModality(''); setFilterTech(''); setFilterDateFrom(''); setFilterDateTo(''); }} mb={2}>Limpiar filtros</Button>
+          )}
 
           <VStack spacing={3} align="stretch">
             {filteredOffers.length === 0 && <Text color="gray.500" textAlign="center" py={4}>No hay ofertas</Text>}
@@ -400,6 +493,106 @@ export default function Trabajo() {
               </VStack>
             ) : (
               <Text color="gray.500" fontSize="sm">Sin ofertas este día</Text>
+            )}
+          </Box>
+
+          <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+            <Flex justify="space-between" align="center" mb={3}>
+              <Text fontWeight="bold">Detalle por Semana</Text>
+              <HStack>
+                <Text fontSize="sm">Semana del:</Text>
+                <Input size="sm" w="180px" type="date" value={selectedMetricWeek} onChange={(e) => setSelectedMetricWeek(e.target.value)} />
+              </HStack>
+            </Flex>
+            <HStack spacing={4} mb={3}>
+              <Badge colorScheme="purple">{weekDetailStats.offers.length} ofertas en semana del {formatDate(selectedMetricWeek)}</Badge>
+            </HStack>
+            {weekDetailStats.byPortal.length > 0 && (
+              <HStack spacing={3} mb={3}>
+                <Text fontSize="sm" fontWeight="bold">Por portal:</Text>
+                {weekDetailStats.byPortal.map((p) => <Badge key={p.name} colorScheme="orange">{p.name}: {p.value}</Badge>)}
+              </HStack>
+            )}
+            {weekDetailStats.byStatus.length > 0 && (
+              <HStack spacing={3} mb={3}>
+                <Text fontSize="sm" fontWeight="bold">Por estado:</Text>
+                {weekDetailStats.byStatus.map((s) => <Badge key={s.name} colorScheme="green">{s.name}: {s.value}</Badge>)}
+              </HStack>
+            )}
+            {weekDetailStats.byModality.length > 0 && (
+              <HStack spacing={3} mb={3}>
+                <Text fontSize="sm" fontWeight="bold">Por modalidad:</Text>
+                {weekDetailStats.byModality.map((m) => <Badge key={m.name} colorScheme="blue">{m.name}: {m.value}</Badge>)}
+              </HStack>
+            )}
+            {weekDetailStats.offers.length > 0 ? (
+              <VStack align="stretch" mt={3} spacing={2}>
+                {weekDetailStats.offers.map((o) => (
+                  <HStack key={o.id} p={2} bg={rowBg} borderRadius="md" spacing={3}>
+                    <Badge colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
+                    {o.jobName && <Text fontSize="sm" fontWeight="bold">{o.jobName}</Text>}
+                    <Text fontSize="sm" fontWeight="semibold">{o.company}</Text>
+                    {o.modality && <Badge size="sm" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
+                    <Text fontSize="sm" color="gray.500">{o.portal}</Text>
+                    <Text fontSize="sm" color="gray.400">{formatDate(o.date)}</Text>
+                  </HStack>
+                ))}
+              </VStack>
+            ) : (
+              <Text color="gray.500" fontSize="sm">Sin ofertas esta semana</Text>
+            )}
+          </Box>
+
+          <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+            <Flex justify="space-between" align="center" mb={3}>
+              <Text fontWeight="bold">Detalle por Mes</Text>
+              <HStack>
+                <Text fontSize="sm">Mes:</Text>
+                <Input size="sm" w="160px" type="month" value={selectedMetricMonth} onChange={(e) => setSelectedMetricMonth(e.target.value)} />
+              </HStack>
+            </Flex>
+            <HStack spacing={4} mb={3}>
+              <Badge colorScheme="teal">{monthDetailStats.offers.length} ofertas en {formatDate(selectedMetricMonth + '-01')}</Badge>
+            </HStack>
+            {monthDetailStats.byPortal.length > 0 && (
+              <HStack spacing={3} mb={3}>
+                <Text fontSize="sm" fontWeight="bold">Por portal:</Text>
+                {monthDetailStats.byPortal.map((p) => <Badge key={p.name} colorScheme="orange">{p.name}: {p.value}</Badge>)}
+              </HStack>
+            )}
+            {monthDetailStats.byStatus.length > 0 && (
+              <HStack spacing={3} mb={3}>
+                <Text fontSize="sm" fontWeight="bold">Por estado:</Text>
+                {monthDetailStats.byStatus.map((s) => <Badge key={s.name} colorScheme="green">{s.name}: {s.value}</Badge>)}
+              </HStack>
+            )}
+            {monthDetailStats.byModality.length > 0 && (
+              <HStack spacing={3} mb={3}>
+                <Text fontSize="sm" fontWeight="bold">Por modalidad:</Text>
+                {monthDetailStats.byModality.map((m) => <Badge key={m.name} colorScheme="blue">{m.name}: {m.value}</Badge>)}
+              </HStack>
+            )}
+            {monthDetailStats.byTech.length > 0 && (
+              <HStack spacing={3} mb={3}>
+                <Text fontSize="sm" fontWeight="bold">Top tecnologías:</Text>
+                {monthDetailStats.byTech.slice(0, 8).map((t) => <Badge key={t.name} colorScheme="cyan">{t.name}: {t.value}</Badge>)}
+              </HStack>
+            )}
+            {monthDetailStats.offers.length > 0 ? (
+              <VStack align="stretch" mt={3} spacing={2}>
+                {monthDetailStats.offers.map((o) => (
+                  <HStack key={o.id} p={2} bg={rowBg} borderRadius="md" spacing={3}>
+                    <Badge colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
+                    {o.jobName && <Text fontSize="sm" fontWeight="bold">{o.jobName}</Text>}
+                    <Text fontSize="sm" fontWeight="semibold">{o.company}</Text>
+                    {o.modality && <Badge size="sm" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
+                    <Text fontSize="sm" color="gray.500">{o.portal}</Text>
+                    <Text fontSize="sm" color="gray.400">{formatDate(o.date)}</Text>
+                  </HStack>
+                ))}
+              </VStack>
+            ) : (
+              <Text color="gray.500" fontSize="sm">Sin ofertas este mes</Text>
             )}
           </Box>
         </TabPanel>
