@@ -1255,11 +1255,13 @@ function PizarraProyectos({ projectId }) {
 function KanbanBoard({ projectId }) {
   const store = useStore();
   const project = store.projects.find((p) => p.id === projectId);
-  const { updateProject, addAgendaTask, addNotification, addKanbanBoard, deleteKanbanBoard, renameKanbanBoard } = store;
+  const { updateProject, addAgendaTask, addNotification, addKanbanBoard, deleteKanbanBoard, renameKanbanBoard, addKanbanBoardTask, updateKanbanBoardTask, clearKanbanBoard } = store;
 
   const kanbanBoards = project?.kanbanBoards || {};
   const kanbanBoardIds = Object.keys(kanbanBoards);
   const [selectedKbBoardId, setSelectedKbBoardId] = useState(kanbanBoardIds[0] || '');
+  const currentKbBoard = kanbanBoards[selectedKbBoardId] || {};
+  const kbBoardTasks = currentKbBoard.tasks || [];
   const [kbBoardName, setKbBoardName] = useState('');
   const { isOpen: isKbBoardOpen, onOpen: onKbBoardOpen, onClose: onKbBoardClose } = useDisclosure();
 
@@ -1269,7 +1271,7 @@ function KanbanBoard({ projectId }) {
     } else if (kanbanBoardIds.length === 0) {
       setSelectedKbBoardId('');
     }
-  }, [project?.kanbanBoards]);
+  }, [project?.kanbanBoards, projectId]);
 
   const columns = [
     { id: 'pendiente', label: 'Pendiente', color: 'gray' },
@@ -1293,7 +1295,7 @@ function KanbanBoard({ projectId }) {
   const cardBg = useColorModeValue('white', 'gray.800');
 
   const getColumnTasks = (status) => {
-    return (project?.tasks || []).filter(t => (t.status || 'pendiente') === status);
+    return kbBoardTasks.filter(t => (t.status || 'pendiente') === status);
   };
 
   const handleDragStart = (e, taskId) => {
@@ -1308,31 +1310,33 @@ function KanbanBoard({ projectId }) {
 
   const handleDrop = useCallback((e, columnId) => {
     e.preventDefault();
-    const currentProject = useStore.getState().projects.find(p => p.id === projectId);
-    if (!draggedTask || !currentProject) return;
-    const updatedTasks = currentProject.tasks.map(t =>
-      t.id === draggedTask ? { ...t, status: columnId } : t
-    );
-    updateProject(projectId, { tasks: updatedTasks });
+    if (!draggedTask || !selectedKbBoardId) return;
+    const currentBoard = useStore.getState().projects.find(p => p.id === projectId)?.kanbanBoards?.[selectedKbBoardId];
+    const tasks = currentBoard?.tasks || [];
+    tasks.forEach(t => {
+      if (t.id === draggedTask && t.status !== columnId) {
+        updateKanbanBoardTask(projectId, selectedKbBoardId, t.id, { status: columnId });
+      }
+    });
 
     if (columnId === 'completado') {
-      const task = currentProject.tasks.find(t => t.id === draggedTask);
+      const task = tasks.find(t => t.id === draggedTask);
       if (task) {
-        addNotification({ title: 'Subtarea completada', message: `"${task.name}" completada en "${currentProject.name}"`, type: 'success', section: 'proyectos' });
+        addNotification({ title: 'Subtarea completada', message: `"${task.name}" completada en "${project?.name || ''}"`, type: 'success', section: 'proyectos' });
       }
     }
 
     setDraggedTask(null);
     setDragOverColumn(null);
-  }, [draggedTask, projectId, updateProject, addNotification]);
+  }, [draggedTask, projectId, selectedKbBoardId, updateKanbanBoardTask, addNotification, project?.name]);
 
   const completedCount = getColumnTasks('completado').length;
-  const totalTasks = (project?.tasks || []).length;
+  const totalTasks = kbBoardTasks.length;
+  const completedTasks = kbBoardTasks.filter(t => t.completed || t.status === 'completado').length;
 
   const addTaskFromBoard = () => {
-    if (!newTaskForm.name || !project) return;
-    const newTask = {
-      id: Date.now().toString(),
+    if (!newTaskForm.name || !selectedKbBoardId) return;
+    addKanbanBoardTask(projectId, selectedKbBoardId, {
       name: newTaskForm.name,
       description: newTaskForm.description,
       completed: false,
@@ -1340,25 +1344,35 @@ function KanbanBoard({ projectId }) {
       estimatedHours: parseFloat(newTaskForm.estimatedHours) || 1,
       startDate: newTaskForm.startDate || format(new Date(), 'yyyy-MM-dd'),
       endDate: newTaskForm.endDate || '',
-    };
-    updateProject(projectId, { tasks: [...(project.tasks || []), newTask] });
+    });
     setNewTaskForm({ name: '', description: '', estimatedHours: 1, startDate: format(new Date(), 'yyyy-MM-dd'), endDate: '' });
     setIsAddOpen(false);
   };
 
   const syncFromSubtasks = () => {
-    if (!project || !project.tasks || project.tasks.length === 0) return;
-    const updatedTasks = project.tasks.map(t => ({
-      ...t,
-      status: t.completed ? 'completado' : (t.status || 'pendiente'),
-    }));
-    updateProject(projectId, { tasks: updatedTasks });
+    if (!project || !project.tasks || project.tasks.length === 0 || !selectedKbBoardId) return;
+    const existingTasks = useStore.getState().projects.find(p => p.id === projectId)?.kanbanBoards?.[selectedKbBoardId]?.tasks || [];
+    const existingIds = new Set(existingTasks.map(t => t.sourceTaskId).filter(Boolean));
+    const newTasks = project.tasks
+      .filter(t => !existingIds.has(t.id))
+      .map(t => ({
+        name: t.name,
+        description: t.description || '',
+        completed: t.completed || false,
+        status: t.completed ? 'completado' : 'pendiente',
+        estimatedHours: t.estimatedHours || 1,
+        startDate: t.startDate || '',
+        endDate: t.endDate || '',
+        sourceTaskId: t.id,
+      }));
+    if (newTasks.length > 0) {
+      newTasks.forEach(task => addKanbanBoardTask(projectId, selectedKbBoardId, task));
+    }
   };
 
   const clearBoard = () => {
     if (!selectedKbBoardId) return;
-    const boards = project?.kanbanBoards || {};
-    updateProject(projectId, { kanbanBoards: { ...boards, [selectedKbBoardId]: { ...boards[selectedKbBoardId], assignments: {} } } });
+    clearKanbanBoard(projectId, selectedKbBoardId);
   };
 
   const openEditTask = (task) => {
@@ -1596,11 +1610,9 @@ function KanbanBoard({ projectId }) {
 }
 
 export default function Proyectos() {
-  const { projects, projectPizarras, addProjectBoard } = useStore();
+  const { projects } = useStore();
   const [pizarraProjectId, setPizarraProjectId] = useState('');
-  const [pizarraBoardId, setPizarraBoardId] = useState('');
   const [kanbanProjectId, setKanbanProjectId] = useState('');
-  const [kanbanBoardId, setKanbanBoardId] = useState('');
   const tabBg = useColorModeValue('white', 'gray.800');
 
   useEffect(() => {
@@ -1610,35 +1622,6 @@ export default function Proyectos() {
   useEffect(() => {
     if (projects.length > 0 && !kanbanProjectId) setKanbanProjectId(projects[0].id);
   }, [projects, kanbanProjectId]);
-
-  const pizarraBoards = pizarraProjectId ? (projectPizarras[pizarraProjectId] || {}) : {};
-  const pizarraBoardIds = Object.keys(pizarraBoards);
-
-  useEffect(() => {
-    if (pizarraBoardIds.length > 0 && !pizarraBoardIds.includes(pizarraBoardId)) {
-      setPizarraBoardId(pizarraBoardIds[0]);
-    }
-  }, [pizarraBoardIds, pizarraBoardId]);
-
-  const kanbanProject = projects.find(p => p.id === kanbanProjectId);
-  const kanbanBoards = kanbanProject?.kanbanBoards || {};
-  const kanbanBoardIds = Object.keys(kanbanBoards);
-
-  useEffect(() => {
-    if (kanbanBoardIds.length > 0 && !kanbanBoardIds.includes(kanbanBoardId)) {
-      setKanbanBoardId(kanbanBoardIds[0]);
-    }
-  }, [kanbanBoardIds, kanbanBoardId]);
-
-  const handlePizarraProjectChange = (val) => {
-    setPizarraProjectId(val);
-    setPizarraBoardId('');
-  };
-
-  const handleKanbanProjectChange = (val) => {
-    setKanbanProjectId(val);
-    setKanbanBoardId('');
-  };
 
   return (
     <Tabs variant="enclosed" colorScheme="purple">
@@ -1660,17 +1643,9 @@ export default function Proyectos() {
             <Box>
               <HStack mb={4} p={3} bg={tabBg} borderRadius="xl" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')} wrap="wrap" gap={2}>
                 <Text fontSize="sm" fontWeight="bold">Proyecto:</Text>
-                <Select size="sm" w="250px" value={pizarraProjectId} onChange={(e) => handlePizarraProjectChange(e.target.value)}>
+                <Select size="sm" w="250px" value={pizarraProjectId} onChange={(e) => setPizarraProjectId(e.target.value)}>
                   {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </Select>
-                {pizarraBoardIds.length > 0 && (
-                  <>
-                    <Text fontSize="sm" fontWeight="bold">Tablero:</Text>
-                    <Select size="sm" w="200px" value={pizarraBoardId} onChange={(e) => setPizarraBoardId(e.target.value)}>
-                      {pizarraBoardIds.map((bid) => <option key={bid} value={bid}>{pizarraBoards[bid]?.name || 'Tablero'}</option>)}
-                    </Select>
-                  </>
-                )}
               </HStack>
               {pizarraProjectId && <PizarraProyectos projectId={pizarraProjectId} />}
             </Box>
@@ -1683,17 +1658,9 @@ export default function Proyectos() {
             <Box>
               <HStack mb={4} p={3} bg={tabBg} borderRadius="xl" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')} wrap="wrap" gap={2}>
                 <Text fontSize="sm" fontWeight="bold">Proyecto:</Text>
-                <Select size="sm" w="250px" value={kanbanProjectId} onChange={(e) => handleKanbanProjectChange(e.target.value)}>
+                <Select size="sm" w="250px" value={kanbanProjectId} onChange={(e) => setKanbanProjectId(e.target.value)}>
                   {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </Select>
-                {kanbanBoardIds.length > 0 && (
-                  <>
-                    <Text fontSize="sm" fontWeight="bold">Tablero:</Text>
-                    <Select size="sm" w="200px" value={kanbanBoardId} onChange={(e) => setKanbanBoardId(e.target.value)}>
-                      {kanbanBoardIds.map((bid) => <option key={bid} value={bid}>{kanbanBoards[bid]?.name || 'Tablero'}</option>)}
-                    </Select>
-                  </>
-                )}
               </HStack>
               {kanbanProjectId && <KanbanBoard projectId={kanbanProjectId} />}
             </Box>

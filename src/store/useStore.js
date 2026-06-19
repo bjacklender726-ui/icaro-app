@@ -756,7 +756,7 @@ const useStore = create((set, get) => {
     addKanbanBoard: (projectId, name) => {
       const boardId = uuidv4();
       set((s) => ({
-        projects: s.projects.map((p) => p.id === projectId ? { ...p, kanbanBoards: { ...(p.kanbanBoards || {}), [boardId]: { name, createdAt: new Date().toISOString() } } } : p)
+        projects: s.projects.map((p) => p.id === projectId ? { ...p, kanbanBoards: { ...(p.kanbanBoards || {}), [boardId]: { name, tasks: [], createdAt: new Date().toISOString() } } } : p)
       }));
       setTimeout(saveCurrentUserData, 0);
       return boardId;
@@ -777,6 +777,51 @@ const useStore = create((set, get) => {
         projects: s.projects.map((p) => {
           if (p.id !== projectId) return p;
           return { ...p, kanbanBoards: { ...(p.kanbanBoards || {}), [boardId]: { ...(p.kanbanBoards?.[boardId] || {}), name } } };
+        })
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
+
+    addKanbanBoardTask: (projectId, boardId, task) => {
+      set((s) => ({
+        projects: s.projects.map((p) => {
+          if (p.id !== projectId) return p;
+          const boards = p.kanbanBoards || {};
+          const board = boards[boardId] || { name: '', tasks: [] };
+          return { ...p, kanbanBoards: { ...boards, [boardId]: { ...board, tasks: [...(board.tasks || []), { ...task, id: uuidv4(), createdAt: new Date().toISOString() }] } } };
+        })
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
+    updateKanbanBoardTask: (projectId, boardId, taskId, data) => {
+      set((s) => ({
+        projects: s.projects.map((p) => {
+          if (p.id !== projectId) return p;
+          const boards = p.kanbanBoards || {};
+          const board = boards[boardId] || { name: '', tasks: [] };
+          return { ...p, kanbanBoards: { ...boards, [boardId]: { ...board, tasks: (board.tasks || []).map(t => t.id === taskId ? { ...t, ...data } : t) } } };
+        })
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
+    deleteKanbanBoardTask: (projectId, boardId, taskId) => {
+      set((s) => ({
+        projects: s.projects.map((p) => {
+          if (p.id !== projectId) return p;
+          const boards = p.kanbanBoards || {};
+          const board = boards[boardId] || { name: '', tasks: [] };
+          return { ...p, kanbanBoards: { ...boards, [boardId]: { ...board, tasks: (board.tasks || []).filter(t => t.id !== taskId) } } };
+        })
+      }));
+      setTimeout(saveCurrentUserData, 0);
+    },
+    clearKanbanBoard: (projectId, boardId) => {
+      set((s) => ({
+        projects: s.projects.map((p) => {
+          if (p.id !== projectId) return p;
+          const boards = p.kanbanBoards || {};
+          const board = boards[boardId] || { name: '', tasks: [] };
+          return { ...p, kanbanBoards: { ...boards, [boardId]: { ...board, tasks: [] } } };
         })
       }));
       setTimeout(saveCurrentUserData, 0);
