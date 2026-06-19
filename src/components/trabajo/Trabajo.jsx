@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react';
+import { Box, Grid, Text, Flex, VStack, HStack, Badge, Button, IconButton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, FormControl, FormLabel, Input, Textarea, Select, Stat, StatLabel, StatNumber, SimpleGrid, useColorModeValue, Tabs, TabList, TabPanels, Tab, TabPanel, useBreakpointValue } from '@chakra-ui/react';
 import { FiPlus, FiTrash2, FiEdit3, FiBriefcase, FiBarChart2, FiDownload, FiUpload } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import useStore from '../../store/useStore';
@@ -143,6 +143,9 @@ export default function Trabajo() {
   const [filterTech, setFilterTech] = useState('');
   const [sortBy, setSortBy] = useState('date-desc');
   const importRef = React.useRef(null);
+
+  const chartHeight = useBreakpointValue({ base: 180, md: 200, lg: 220 });
+  const detailColumns = useBreakpointValue({ base: 1, md: 1, lg: 2 });
 
   const exportData = (data, filename) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -394,22 +397,22 @@ export default function Trabajo() {
         </TabPanel>
 
         <TabPanel px={0}>
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} mb={6}>
-            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-              <Stat><StatLabel>Ofertas Enviadas</StatLabel><StatNumber>{totalSent}</StatNumber></Stat>
+          <SimpleGrid columns={{ base: 3, md: 3 }} spacing={3} mb={4}>
+            <Box p={3} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+              <Stat><StatLabel fontSize="xs">Ofertas</StatLabel><StatNumber fontSize="xl">{totalSent}</StatNumber></Stat>
             </Box>
-            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-              <Stat><StatLabel>Tasa de Respuesta</StatLabel><StatNumber color={responseRate >= 30 ? 'green.500' : 'orange.500'}>{responseRate}%</StatNumber></Stat>
+            <Box p={3} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+              <Stat><StatLabel fontSize="xs">Respuesta</StatLabel><StatNumber fontSize="xl" color={responseRate >= 30 ? 'green.500' : 'orange.500'}>{responseRate}%</StatNumber></Stat>
             </Box>
-            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
-              <Stat><StatLabel>Portales Usados</StatLabel><StatNumber>{portalStats.length}</StatNumber></Stat>
+            <Box p={3} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor} textAlign="center">
+              <Stat><StatLabel fontSize="xs">Portales</StatLabel><StatNumber fontSize="xl">{portalStats.length}</StatNumber></Stat>
             </Box>
           </SimpleGrid>
 
-          <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={5} mb={5}>
-            <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-              <Text fontWeight="bold" mb={3}>Diarias (14 días)</Text>
-              <ResponsiveContainer width="100%" height={200}>
+          <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4} mb={5}>
+            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <Text fontWeight="bold" mb={2} fontSize="sm">Diarias (14 días)</Text>
+              <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart data={dailyStats}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                   <XAxis dataKey="day" fontSize={10} tick={{ fill: textColor }} />
@@ -419,36 +422,33 @@ export default function Trabajo() {
                 </BarChart>
               </ResponsiveContainer>
             </Box>
-            <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-              <Text fontWeight="bold" mb={3}>Semanales</Text>
-              <ResponsiveContainer width="100%" height={200}>
+            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <Text fontWeight="bold" mb={2} fontSize="sm">Semanales</Text>
+              <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart data={weeklyStats}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="week" fontSize={12} tick={{ fill: textColor }} />
+                  <XAxis dataKey="week" fontSize={10} tick={{ fill: textColor }} />
                   <YAxis tick={{ fill: textColor }} />
                   <Tooltip contentStyle={{ bg: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '8px', color: tooltipColor }} />
                   <Bar dataKey="ofertas" fill="#ED8936" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Box>
-          </Grid>
-
-          <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={5} mb={5}>
-            <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-              <Text fontWeight="bold" mb={3}>Mensuales</Text>
-              <ResponsiveContainer width="100%" height={200}>
+            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <Text fontWeight="bold" mb={2} fontSize="sm">Mensuales</Text>
+              <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart data={monthlyStats}>
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                  <XAxis dataKey="month" fontSize={12} tick={{ fill: textColor }} />
+                  <XAxis dataKey="month" fontSize={10} tick={{ fill: textColor }} />
                   <YAxis tick={{ fill: textColor }} />
                   <Tooltip contentStyle={{ bg: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '8px', color: tooltipColor }} />
                   <Bar dataKey="ofertas" fill="#9F7AEA" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Box>
-            <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-              <Text fontWeight="bold" mb={3}>Por Portal</Text>
-              <ResponsiveContainer width="100%" height={200}>
+            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <Text fontWeight="bold" mb={2} fontSize="sm">Por Portal</Text>
+              <ResponsiveContainer width="100%" height={chartHeight}>
                 <PieChart>
                   <Pie data={portalStats.length > 0 ? portalStats : [{ name: 'Sin datos', value: 1 }]} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value">
                     {portalStats.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -459,142 +459,130 @@ export default function Trabajo() {
             </Box>
           </Grid>
 
-          <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-            <Flex justify="space-between" align="center" mb={3}>
-              <Text fontWeight="bold">Detalle por Día</Text>
-              <Input size="sm" w="180px" type="date" value={selectedMetricDay} onChange={(e) => setSelectedMetricDay(e.target.value)} />
-            </Flex>
-            <HStack spacing={4} mb={3}>
-              <Badge colorScheme="blue">{dayDetailStats.offers.length} ofertas en {formatDate(selectedMetricDay)}</Badge>
-            </HStack>
-            {dayDetailStats.byPortal.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Por portal:</Text>
-                {dayDetailStats.byPortal.map((p) => <Badge key={p.name} colorScheme="orange">{p.name}: {p.value}</Badge>)}
-              </HStack>
-            )}
-            {dayDetailStats.byStatus.length > 0 && (
-              <HStack spacing={3}>
-                <Text fontSize="sm" fontWeight="bold">Por estado:</Text>
-                {dayDetailStats.byStatus.map((s) => <Badge key={s.name} colorScheme="green">{s.name}: {s.value}</Badge>)}
-              </HStack>
-            )}
-            {dayDetailStats.offers.length > 0 ? (
-              <VStack align="stretch" mt={3} spacing={2}>
-                {dayDetailStats.offers.map((o) => (
-                  <HStack key={o.id} p={2} bg={rowBg} borderRadius="md" spacing={3}>
-                    <Badge colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
-                    {o.jobName && <Text fontSize="sm" fontWeight="bold">{o.jobName}</Text>}
-                    <Text fontSize="sm" fontWeight="semibold">{o.company}</Text>
-                    {o.modality && <Badge size="sm" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
-                    <Text fontSize="sm" color="gray.500">{o.portal}</Text>
-                  </HStack>
-                ))}
-              </VStack>
-            ) : (
-              <Text color="gray.500" fontSize="sm">Sin ofertas este día</Text>
-            )}
-          </Box>
+          <Grid templateColumns={{ base: '1fr', lg: `repeat(${detailColumns}, 1fr)` }} gap={4}>
+            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <Flex justify="space-between" align="center" mb={2} wrap="wrap" gap={2}>
+                <Text fontWeight="bold" fontSize="sm">Detalle por Día</Text>
+                <Input size="xs" w="140px" type="date" value={selectedMetricDay} onChange={(e) => setSelectedMetricDay(e.target.value)} />
+              </Flex>
+              <Badge colorScheme="blue" mb={2}>{dayDetailStats.offers.length} ofertas</Badge>
+              {dayDetailStats.byPortal.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Portal:</Text>
+                  {dayDetailStats.byPortal.map((p) => <Badge key={p.name} size="sm" colorScheme="orange">{p.name}: {p.value}</Badge>)}
+                </HStack>
+              )}
+              {dayDetailStats.byStatus.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Estado:</Text>
+                  {dayDetailStats.byStatus.map((s) => <Badge key={s.name} size="sm" colorScheme="green">{s.name}: {s.value}</Badge>)}
+                </HStack>
+              )}
+              {dayDetailStats.offers.length > 0 ? (
+                <VStack align="stretch" mt={2} spacing={1} maxH="200px" overflowY="auto">
+                  {dayDetailStats.offers.map((o) => (
+                    <HStack key={o.id} p={1.5} bg={rowBg} borderRadius="md" spacing={2} wrap="wrap">
+                      <Badge size="xs" colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
+                      {o.jobName && <Text fontSize="xs" fontWeight="bold">{o.jobName}</Text>}
+                      <Text fontSize="xs" fontWeight="semibold">{o.company}</Text>
+                      {o.modality && <Badge size="xs" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
+                      <Text fontSize="xs" color="gray.500">{o.portal}</Text>
+                    </HStack>
+                  ))}
+                </VStack>
+              ) : (
+                <Text color="gray.500" fontSize="xs">Sin ofertas</Text>
+              )}
+            </Box>
 
-          <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-            <Flex justify="space-between" align="center" mb={3}>
-              <Text fontWeight="bold">Detalle por Semana</Text>
-              <HStack>
-                <Text fontSize="sm">Semana del:</Text>
-                <Input size="sm" w="180px" type="date" value={selectedMetricWeek} onChange={(e) => setSelectedMetricWeek(e.target.value)} />
-              </HStack>
-            </Flex>
-            <HStack spacing={4} mb={3}>
-              <Badge colorScheme="purple">{weekDetailStats.offers.length} ofertas en semana del {formatDate(selectedMetricWeek)}</Badge>
-            </HStack>
-            {weekDetailStats.byPortal.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Por portal:</Text>
-                {weekDetailStats.byPortal.map((p) => <Badge key={p.name} colorScheme="orange">{p.name}: {p.value}</Badge>)}
-              </HStack>
-            )}
-            {weekDetailStats.byStatus.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Por estado:</Text>
-                {weekDetailStats.byStatus.map((s) => <Badge key={s.name} colorScheme="green">{s.name}: {s.value}</Badge>)}
-              </HStack>
-            )}
-            {weekDetailStats.byModality.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Por modalidad:</Text>
-                {weekDetailStats.byModality.map((m) => <Badge key={m.name} colorScheme="blue">{m.name}: {m.value}</Badge>)}
-              </HStack>
-            )}
-            {weekDetailStats.offers.length > 0 ? (
-              <VStack align="stretch" mt={3} spacing={2}>
-                {weekDetailStats.offers.map((o) => (
-                  <HStack key={o.id} p={2} bg={rowBg} borderRadius="md" spacing={3}>
-                    <Badge colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
-                    {o.jobName && <Text fontSize="sm" fontWeight="bold">{o.jobName}</Text>}
-                    <Text fontSize="sm" fontWeight="semibold">{o.company}</Text>
-                    {o.modality && <Badge size="sm" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
-                    <Text fontSize="sm" color="gray.500">{o.portal}</Text>
-                    <Text fontSize="sm" color="gray.400">{formatDate(o.date)}</Text>
-                  </HStack>
-                ))}
-              </VStack>
-            ) : (
-              <Text color="gray.500" fontSize="sm">Sin ofertas esta semana</Text>
-            )}
-          </Box>
+            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <Flex justify="space-between" align="center" mb={2} wrap="wrap" gap={2}>
+                <Text fontWeight="bold" fontSize="sm">Detalle por Semana</Text>
+                <Input size="xs" w="140px" type="date" value={selectedMetricWeek} onChange={(e) => setSelectedMetricWeek(e.target.value)} />
+              </Flex>
+              <Badge colorScheme="purple" mb={2}>{weekDetailStats.offers.length} ofertas</Badge>
+              {weekDetailStats.byPortal.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Portal:</Text>
+                  {weekDetailStats.byPortal.map((p) => <Badge key={p.name} size="sm" colorScheme="orange">{p.name}: {p.value}</Badge>)}
+                </HStack>
+              )}
+              {weekDetailStats.byStatus.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Estado:</Text>
+                  {weekDetailStats.byStatus.map((s) => <Badge key={s.name} size="sm" colorScheme="green">{s.name}: {s.value}</Badge>)}
+                </HStack>
+              )}
+              {weekDetailStats.byModality.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Modalidad:</Text>
+                  {weekDetailStats.byModality.map((m) => <Badge key={m.name} size="sm" colorScheme="blue">{m.name}: {m.value}</Badge>)}
+                </HStack>
+              )}
+              {weekDetailStats.offers.length > 0 ? (
+                <VStack align="stretch" mt={2} spacing={1} maxH="200px" overflowY="auto">
+                  {weekDetailStats.offers.map((o) => (
+                    <HStack key={o.id} p={1.5} bg={rowBg} borderRadius="md" spacing={2} wrap="wrap">
+                      <Badge size="xs" colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
+                      {o.jobName && <Text fontSize="xs" fontWeight="bold">{o.jobName}</Text>}
+                      <Text fontSize="xs" fontWeight="semibold">{o.company}</Text>
+                      {o.modality && <Badge size="xs" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
+                      <Text fontSize="xs" color="gray.500">{o.portal}</Text>
+                    </HStack>
+                  ))}
+                </VStack>
+              ) : (
+                <Text color="gray.500" fontSize="xs">Sin ofertas</Text>
+              )}
+            </Box>
 
-          <Box p={5} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
-            <Flex justify="space-between" align="center" mb={3}>
-              <Text fontWeight="bold">Detalle por Mes</Text>
-              <HStack>
-                <Text fontSize="sm">Mes:</Text>
-                <Input size="sm" w="160px" type="month" value={selectedMetricMonth} onChange={(e) => setSelectedMetricMonth(e.target.value)} />
-              </HStack>
-            </Flex>
-            <HStack spacing={4} mb={3}>
-              <Badge colorScheme="teal">{monthDetailStats.offers.length} ofertas en {formatDate(selectedMetricMonth + '-01')}</Badge>
-            </HStack>
-            {monthDetailStats.byPortal.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Por portal:</Text>
-                {monthDetailStats.byPortal.map((p) => <Badge key={p.name} colorScheme="orange">{p.name}: {p.value}</Badge>)}
-              </HStack>
-            )}
-            {monthDetailStats.byStatus.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Por estado:</Text>
-                {monthDetailStats.byStatus.map((s) => <Badge key={s.name} colorScheme="green">{s.name}: {s.value}</Badge>)}
-              </HStack>
-            )}
-            {monthDetailStats.byModality.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Por modalidad:</Text>
-                {monthDetailStats.byModality.map((m) => <Badge key={m.name} colorScheme="blue">{m.name}: {m.value}</Badge>)}
-              </HStack>
-            )}
-            {monthDetailStats.byTech.length > 0 && (
-              <HStack spacing={3} mb={3}>
-                <Text fontSize="sm" fontWeight="bold">Top tecnologías:</Text>
-                {monthDetailStats.byTech.slice(0, 8).map((t) => <Badge key={t.name} colorScheme="cyan">{t.name}: {t.value}</Badge>)}
-              </HStack>
-            )}
-            {monthDetailStats.offers.length > 0 ? (
-              <VStack align="stretch" mt={3} spacing={2}>
-                {monthDetailStats.offers.map((o) => (
-                  <HStack key={o.id} p={2} bg={rowBg} borderRadius="md" spacing={3}>
-                    <Badge colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
-                    {o.jobName && <Text fontSize="sm" fontWeight="bold">{o.jobName}</Text>}
-                    <Text fontSize="sm" fontWeight="semibold">{o.company}</Text>
-                    {o.modality && <Badge size="sm" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
-                    <Text fontSize="sm" color="gray.500">{o.portal}</Text>
-                    <Text fontSize="sm" color="gray.400">{formatDate(o.date)}</Text>
-                  </HStack>
-                ))}
-              </VStack>
-            ) : (
-              <Text color="gray.500" fontSize="sm">Sin ofertas este mes</Text>
-            )}
-          </Box>
+            <Box p={4} bg={bg} borderRadius="xl" boxShadow="md" border="1px solid" borderColor={borderColor}>
+              <Flex justify="space-between" align="center" mb={2} wrap="wrap" gap={2}>
+                <Text fontWeight="bold" fontSize="sm">Detalle por Mes</Text>
+                <Input size="xs" w="140px" type="month" value={selectedMetricMonth} onChange={(e) => setSelectedMetricMonth(e.target.value)} />
+              </Flex>
+              <Badge colorScheme="teal" mb={2}>{monthDetailStats.offers.length} ofertas</Badge>
+              {monthDetailStats.byPortal.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Portal:</Text>
+                  {monthDetailStats.byPortal.map((p) => <Badge key={p.name} size="sm" colorScheme="orange">{p.name}: {p.value}</Badge>)}
+                </HStack>
+              )}
+              {monthDetailStats.byStatus.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Estado:</Text>
+                  {monthDetailStats.byStatus.map((s) => <Badge key={s.name} size="sm" colorScheme="green">{s.name}: {s.value}</Badge>)}
+                </HStack>
+              )}
+              {monthDetailStats.byModality.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Modalidad:</Text>
+                  {monthDetailStats.byModality.map((m) => <Badge key={m.name} size="sm" colorScheme="blue">{m.name}: {m.value}</Badge>)}
+                </HStack>
+              )}
+              {monthDetailStats.byTech.length > 0 && (
+                <HStack spacing={2} mb={2} wrap="wrap">
+                  <Text fontSize="xs" fontWeight="bold">Tech:</Text>
+                  {monthDetailStats.byTech.slice(0, 6).map((t) => <Badge key={t.name} size="xs" colorScheme="cyan">{t.name}: {t.value}</Badge>)}
+                </HStack>
+              )}
+              {monthDetailStats.offers.length > 0 ? (
+                <VStack align="stretch" mt={2} spacing={1} maxH="200px" overflowY="auto">
+                  {monthDetailStats.offers.map((o) => (
+                    <HStack key={o.id} p={1.5} bg={rowBg} borderRadius="md" spacing={2} wrap="wrap">
+                      <Badge size="xs" colorScheme={JOB_STATUSES[o.status]?.color}>{JOB_STATUSES[o.status]?.label}</Badge>
+                      {o.jobName && <Text fontSize="xs" fontWeight="bold">{o.jobName}</Text>}
+                      <Text fontSize="xs" fontWeight="semibold">{o.company}</Text>
+                      {o.modality && <Badge size="xs" colorScheme={o.modality === 'remoto' ? 'green' : o.modality === 'hibrido' ? 'purple' : 'orange'}>{o.modality}</Badge>}
+                      <Text fontSize="xs" color="gray.500">{o.portal}</Text>
+                    </HStack>
+                  ))}
+                </VStack>
+              ) : (
+                <Text color="gray.500" fontSize="xs">Sin ofertas</Text>
+              )}
+            </Box>
+          </Grid>
         </TabPanel>
       </TabPanels>
     </Tabs>
