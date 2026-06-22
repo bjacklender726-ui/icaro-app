@@ -238,28 +238,27 @@ export default function Agenda() {
                   const height = getTaskHeight(task.hour, task.hourEnd);
                   const cat = CATEGORIES[task.category] || CATEGORIES.otro;
                   return (
-                    <Tooltip key={task.id} label={`${task.title} - ${task.description || ''}`} hasArrow>
-                      <Box position="absolute" top={`${pos}px`} left="4px" right="4px" height={`${height}px`}
-                        bg={`${cat.color}20`} borderLeft={`3px solid ${cat.color}`} borderRadius="md"
-                        px={2} py={1} cursor="pointer" overflow="hidden"
-                        _hover={{ bg: `${cat.color}30`, boxShadow: 'md' }}
-                        onClick={() => openEdit(task)} transition="all 0.2s">
-                        <Flex justify="space-between" align="start">
-                          <Box flex={1}>
-                            <Text fontSize="xs" fontWeight="bold" noOfLines={1}
-                              textDecoration={task.completed ? 'line-through' : 'none'}>
-                              {task.title} {task.category === 'otro' && task.customCategory ? `(${task.customCategory})` : ''}
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">{task.hour}-{task.hourEnd || ''}</Text>
-                          </Box>
-                          <HStack spacing={1}>
-                            {task.completed && <FiCheck size={10} color="green" />}
-                            <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red"
-                              onClick={(e) => { e.stopPropagation(); deleteAgendaTask(task.id); }} />
-                          </HStack>
-                        </Flex>
+                    <Box key={task.id} position="absolute" top={`${pos}px`} left="4px" right="4px" height={`${height}px`}
+                      bg={`${cat.color}20`} borderLeft={`3px solid ${cat.color}`} borderRadius="md"
+                      px={2} py={1} cursor="pointer" overflow="hidden"
+                      _hover={{ bg: `${cat.color}30`, boxShadow: 'md' }}
+                      onClick={() => openEdit(task)} transition="all 0.2s">
+                      <Box position="absolute" top="2px" right="2px" zIndex={3}
+                        opacity={0.4} _hover={{ opacity: 1 }}>
+                        <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red"
+                          onClick={(e) => { e.stopPropagation(); deleteAgendaTask(task.id); }} />
                       </Box>
-                    </Tooltip>
+                      {task.completed && (
+                        <Box position="absolute" top="2px" right="28px" zIndex={3}>
+                          <FiCheck size={10} color="green" />
+                        </Box>
+                      )}
+                      <Text fontSize="xs" fontWeight="bold" noOfLines={1}
+                        textDecoration={task.completed ? 'line-through' : 'none'}>
+                        {task.title} {task.category === 'otro' && task.customCategory ? `(${task.customCategory})` : ''}
+                      </Text>
+                      <Text fontSize="xs" color="gray.500">{task.hour}-{task.hourEnd || ''}</Text>
+                    </Box>
                   );
                 })}
                 {isToday(selectedDate) && (() => {
