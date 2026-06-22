@@ -36,6 +36,10 @@ export default function Agenda() {
     repeatType: 'none', repeatDays: [],
   });
 
+  const [repeatStartDate, setRepeatStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [repeatEndDate, setRepeatEndDate] = useState('');
+  const [repeatIndefinite, setRepeatIndefinite] = useState(true);
+
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
   const dayTasks = useMemo(() => {
@@ -129,19 +133,30 @@ export default function Agenda() {
   };
 
   const saveTask = () => {
-    const taskData = { ...form };
-    if (form.repeatType !== 'none' && form.repeatDays.length > 0) {
-      form.repeatDays.forEach((dayNum) => {
-        const baseDate = new Date(form.date);
-        const dayDiff = (dayNum - baseDate.getDay() + 7) % 7;
-        const taskDate = format(addDays(baseDate, dayDiff), 'yyyy-MM-dd');
-        addAgendaTask({ ...taskData, date: taskDate });
-      });
+    if (editingTask) {
+      updateAgendaTask(editingTask.id, { ...form });
       onClose();
       return;
     }
-    if (editingTask) updateAgendaTask(editingTask.id, taskData);
-    else addAgendaTask(taskData);
+    if (form.repeatType !== 'none' && form.repeatDays.length > 0) {
+      const startDate = new Date(repeatStartDate + 'T00:00:00');
+      const endDate = repeatIndefinite ? addDays(new Date(), 365) : new Date(repeatEndDate + 'T00:00:00');
+      const current = new Date(startDate);
+      while (current <= endDate) {
+        if (form.repeatDays.includes(current.getDay())) {
+          addAgendaTask({
+            ...form,
+            date: format(current, 'yyyy-MM-dd'),
+            repeatType: form.repeatType,
+            repeatDays: form.repeatDays,
+          });
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      onClose();
+      return;
+    }
+    addAgendaTask({ ...form });
     onClose();
   };
 
@@ -186,6 +201,11 @@ export default function Agenda() {
             {Object.entries(CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </Select>
           <Button leftIcon={<FiPlus />} size="sm" onClick={() => openNew()}>Nueva Tarea</Button>
+          <Button leftIcon={<FiTrash2 />} size="sm" colorScheme="red" variant="outline" onClick={() => {
+            if (window.confirm('¿Borrar TODAS las tareas de la agenda? Esta acción no se puede deshacer.')) {
+              agendaTasks.forEach(t => deleteAgendaTask(t.id));
+            }
+          }}>Limpiar agenda</Button>
         </HStack>
       </Flex>
 
@@ -327,10 +347,14 @@ export default function Agenda() {
                         {tasks.slice(0, 3).map((t) => {
                           const cat = CATEGORIES[t.category] || CATEGORIES.otro;
                           return (
-                            <Box key={t.id} p={1} mb={1} bg={`${cat.color}15`} borderLeft={`2px solid ${cat.color}`} borderRadius="sm">
-                              <Text fontSize="xs" noOfLines={1} fontWeight="500">{t.title}</Text>
-                              <Text fontSize="xs" color="gray.500">{t.hour}</Text>
-                            </Box>
+                            <Flex key={t.id} p={1} mb={1} bg={`${cat.color}15`} borderLeft={`2px solid ${cat.color}`} borderRadius="sm" justify="space-between" align="center">
+                              <Box flex={1} minW={0} cursor="pointer" onClick={() => openEdit(t)}>
+                                <Text fontSize="xs" noOfLines={1} fontWeight="500">{t.title}</Text>
+                                <Text fontSize="xs" color="gray.500">{t.hour}</Text>
+                              </Box>
+                              <IconButton icon={<FiTrash2 />} size="xs" variant="ghost" colorScheme="red" flexShrink={0}
+                                onClick={(e) => { e.stopPropagation(); deleteAgendaTask(t.id); }} />
+                            </Flex>
                           );
                         })}
                         {tasks.length > 3 && <Text fontSize="xs" color="gray.500">+{tasks.length - 3} más</Text>}
@@ -387,7 +411,13 @@ export default function Agenda() {
                         {summary.gymCount > 0 && <Text fontSize="xs" color="red.500">🏋️</Text>}
                         {summary.offerCount > 0 && <Text fontSize="xs" color="orange.500">💼</Text>}
                         {summary.projectHours > 0 && <Text fontSize="xs" color="purple.500">💻</Text>}
-                        {summary.taskCount > 0 && <Badge colorScheme="green" fontSize="xs" mt={1}>{summary.taskCompleted}/{summary.taskCount}</Badge>}
+                        {summary.taskCount > 0 && (
+                          <Badge colorScheme="green" fontSize="xs" mt={1} cursor="pointer" onClick={() => {
+                            const cellDateStr = format(d, 'yyyy-MM-dd');
+                            const dayTasks = agendaTasks.filter(t => t.date === cellDateStr);
+                            dayTasks.forEach(t => deleteAgendaTask(t.id));
+                          }}>{summary.taskCompleted}/{summary.taskCount} 🗑</Badge>
+                        )}
                       </Box>
                     );
                   })}
@@ -446,6 +476,26 @@ export default function Agenda() {
                     ))}
                   </HStack>
                 </FormControl>
+              )}
+              {form.repeatType === 'custom' && (
+                <>
+                  <FormControl display="flex" alignItems="center">
+                    <FormLabel mb={0} fontSize="sm">Repetir indefinidamente</FormLabel>
+                    <Switch isChecked={repeatIndefinite} onChange={(e) => setRepeatIndefinite(e.target.checked)} size="sm" />
+                  </FormControl>
+                  {!repeatIndefinite && (
+                    <HStack w="100%">
+                      <FormControl>
+                        <FormLabel fontSize="sm">Desde</FormLabel>
+                        <Input size="sm" type="date" value={repeatStartDate} onChange={(e) => setRepeatStartDate(e.target.value)} />
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel fontSize="sm">Hasta</FormLabel>
+                        <Input size="sm" type="date" value={repeatEndDate} onChange={(e) => setRepeatEndDate(e.target.value)} />
+                      </FormControl>
+                    </HStack>
+                  )}
+                </>
               )}
               <HStack w="100%" justify="space-between">
                 <FormControl display="flex" alignItems="center"><FormLabel mb={0}>Recordatorio</FormLabel><Switch isChecked={form.reminder} onChange={(e) => setForm((f) => ({ ...f, reminder: e.target.checked }))} /></FormControl>
